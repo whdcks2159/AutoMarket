@@ -20,6 +20,9 @@ def login_required(f):
     def decorated(*args, **kwargs):
         if 'user_id' not in session:
             return redirect(url_for('auth.login'))
+        if not User.query.get(session['user_id']):
+            session.clear()
+            return redirect(url_for('auth.login'))
         return f(*args, **kwargs)
     return decorated
 
