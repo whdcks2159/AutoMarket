@@ -67,6 +67,12 @@ def update_account(account_id):
         account.investment_limit = float(data['investment_limit'])
     if 'market_type' in data:
         account.market_type = data['market_type']
+    if 'strategy' in data:
+        account.strategy = data['strategy'] or None
+    if 'is_active' in data:
+        if data['is_active'] and not account.strategy:
+            return jsonify({'error': '전략을 먼저 설정하세요.'}), 400
+        account.is_active = bool(data['is_active'])
     if 'app_key' in data and data['app_key']:
         account.encrypted_app_key = encrypt(data['app_key'])
     if 'app_secret' in data and data['app_secret']:
