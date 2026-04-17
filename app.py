@@ -23,7 +23,7 @@ def create_app(config_name: str = None) -> Flask:
         app.register_blueprint(account_bp)
         app.register_blueprint(dashboard_bp)
 
-        db.create_all()
+        db.create_all(checkfirst=True)
 
     return app
 
