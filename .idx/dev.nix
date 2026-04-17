@@ -7,6 +7,7 @@
   packages = [
     pkgs.nodejs_22
     pkgs.python3
+    pkgs.python311Packages.pip
   ];
   # Sets environment variables in the workspace
   env = {};
@@ -21,8 +22,9 @@
       enable = true;
       previews = {
         web = {
-          command = ["python3" "-m" "http.server" "$PORT" "--bind" "0.0.0.0"];
+          command = ["bash" "-c" "cd stock-auto && source venv/bin/activate && python app.py"];
           manager = "web";
+          port = 5000;
         };
       };
     };
