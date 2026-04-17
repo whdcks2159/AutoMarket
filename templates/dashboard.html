@@ -151,6 +151,15 @@
       </select>
     </div>
     <div class="form-group">
+      <label class="form-label">투자 전략 *</label>
+      <select class="form-control" id="acc_strategy">
+        <option value="">전략 선택...</option>
+        {% for key, label in strategy_labels.items() %}
+        <option value="{{ key }}">{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="form-group">
       <label class="form-label">투자 한도 (원)</label>
       <input class="form-control" id="acc_limit" type="number" value="1000000"/>
     </div>
@@ -313,6 +322,11 @@ async function toggleActive(accountId, checkbox) {
 async function submitAddAccount() {
   const errEl = document.getElementById('addAccountError');
   errEl.innerHTML = '';
+  const strategy = document.getElementById('acc_strategy').value;
+  if (!strategy) {
+    errEl.innerHTML = '<div class="alert alert-danger">투자 전략을 선택해주세요.</div>';
+    return;
+  }
   const body = {
     name: document.getElementById('acc_name').value,
     account_number: document.getElementById('acc_number').value,
@@ -321,6 +335,7 @@ async function submitAddAccount() {
     app_secret: document.getElementById('acc_secret').value,
     market_type: document.getElementById('acc_market').value,
     investment_limit: document.getElementById('acc_limit').value,
+    strategy,
   };
   try {
     await apiFetch('/api/accounts', { method: 'POST', body: JSON.stringify(body) });
