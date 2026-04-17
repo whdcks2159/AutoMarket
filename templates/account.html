@@ -1,0 +1,264 @@
+{% extends 'base.html' %}
+{% block title %}{{ account.name }} — AutoMarket{% endblock %}
+
+{% block head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="page-header" style="display:flex;align-items:flex-start;justify-content:space-between">
+  <div>
+    <h1>{{ account.name }}</h1>
+    <p>{{ account.account_number }} · {{ account.market_type }} · {{ strategy_labels.get(account.strategy, '전략 미설정') }}</p>
+  </div>
+  <div style="display:flex;gap:10px">
+    <button class="btn btn-outline" onclick="openModal('editAccountModal')">
+      <i class="fa-solid fa-pen"></i> 편집
+    </button>
+    <a href="/dashboard" class="btn btn-outline">
+      <i class="fa-solid fa-arrow-left"></i> 돌아가기
+    </a>
+  </div>
+</div>
+
+<!-- 상태 카드 -->
+<div class="grid grid-4" style="margin-bottom:24px">
+  <div class="stat-card">
+    <div class="stat-label">자동매매</div>
+    <div class="stat-value" style="font-size:1.25rem">
+      <span class="badge {% if account.is_active %}badge-success{% else %}badge-warning{% endif %}">
+        {{ '활성' if account.is_active else '비활성' }}
+      </span>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">투자 한도</div>
+    <div class="stat-value">₩{{ '{:,.0f}'.format(account.investment_limit) }}</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">현재 전략</div>
+    <div class="stat-value" style="font-size:1rem">{{ strategy_labels.get(account.strategy, '-') }}</div>
+  </div>
+  <div class="stat-card" id="balanceStat">
+    <div class="stat-label">평가 잔고</div>
+    <div class="stat-value">조회 중...</div>
+  </div>
+</div>
+
+<!-- 보유 종목 -->
+<div class="card" style="margin-bottom:24px">
+  <div class="card-header">
+    <div class="card-title">보유 종목</div>
+    <button class="btn btn-outline btn-sm" onclick="loadHoldings()">
+      <i class="fa-solid fa-rotate"></i> 새로고침
+    </button>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>종목</th><th>수량</th><th>평균 매수가</th><th>현재가</th><th>평가금액</th><th>수익률</th></tr>
+      </thead>
+      <tbody id="holdingsBody">
+        <tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:24px">불러오는 중...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- 매매 내역 -->
+<div class="card" style="margin-bottom:24px">
+  <div class="card-header">
+    <div class="card-title">매매 내역</div>
+    <span id="tradePager" style="color:var(--text-muted);font-size:.875rem"></span>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>시간</th><th>종목</th><th>구분</th><th>수량</th><th>가격</th><th>금액</th><th>전략</th><th>상태</th></tr>
+      </thead>
+      <tbody id="tradeBody">
+        <tr><td colspan="8" style="text-align:center;color:var(--text-muted);padding:24px">불러오는 중...</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div style="display:flex;gap:8px;margin-top:16px;justify-content:center" id="paginationBtns"></div>
+</div>
+
+<!-- 전략 로그 -->
+<div class="card">
+  <div class="card-header">
+    <div class="card-title">전략 실행 로그</div>
+  </div>
+  <div id="logList" style="font-size:.8rem;font-family:monospace;max-height:320px;overflow-y:auto">
+    <p style="color:var(--text-muted);padding:16px;text-align:center">불러오는 중...</p>
+  </div>
+</div>
+
+<!-- ── 편집 모달 ──────────────────────────────────────────────────── -->
+<div class="modal-overlay" id="editAccountModal">
+  <div class="modal">
+    <div class="modal-title">계좌 편집</div>
+    <div class="form-group">
+      <label class="form-label">별칭</label>
+      <input class="form-control" id="edit_name" value="{{ account.name }}"/>
+    </div>
+    <div class="form-group">
+      <label class="form-label">투자 한도 (원)</label>
+      <input class="form-control" id="edit_limit" type="number" value="{{ account.investment_limit }}"/>
+    </div>
+    <div class="form-group">
+      <label class="form-label">APP KEY (변경 시만 입력)</label>
+      <input class="form-control" id="edit_key" type="password" placeholder="변경하지 않으면 비워두세요"/>
+    </div>
+    <div class="form-group">
+      <label class="form-label">APP SECRET (변경 시만 입력)</label>
+      <input class="form-control" id="edit_secret" type="password" placeholder="변경하지 않으면 비워두세요"/>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('editAccountModal')">취소</button>
+      <button class="btn btn-primary" onclick="submitEdit()">저장</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const accountId = {{ account.id }};
+let currentPage = 1;
+
+async function loadHoldings() {
+  const tbody = document.getElementById('holdingsBody');
+  try {
+    const data = await apiFetch(`/api/accounts/${accountId}/balance`);
+    const items = data.output1 || [];
+    const output2 = data.output2 || {};
+    const totalEval = parseFloat(output2.tot_evlu_amt || output2.frcr_evlu_amt2 || 0);
+    document.querySelector('#balanceStat .stat-value').textContent = '₩' + totalEval.toLocaleString('ko-KR', {maximumFractionDigits: 0});
+
+    if (!items.length) {
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:24px">보유 종목이 없습니다</td></tr>';
+      return;
+    }
+    tbody.innerHTML = items.map(item => {
+      const symbol = item.pdno || item.ovrs_pdno || '';
+      const name = item.prdt_name || item.ovrs_item_name || symbol;
+      const qty = parseInt(item.hldg_qty || item.ovrs_cblc_qty || 0);
+      const avgPrice = parseFloat(item.pchs_avg_pric || item.frcr_pchs_amt1 || 0);
+      const curPrice = parseFloat(item.prpr || item.now_pric2 || 0);
+      const evalAmt = parseFloat(item.evlu_amt || item.ovrs_stck_evlu_amt || 0);
+      const pnlRate = parseFloat(item.evlu_pfls_rt || item.evlu_erng_rt || 0);
+      const rateClass = pnlRate >= 0 ? 'positive' : 'negative';
+      const rateSign = pnlRate >= 0 ? '+' : '';
+      return `<tr>
+        <td><strong>${name}</strong><br><small style="color:var(--text-muted)">${symbol}</small></td>
+        <td>${qty.toLocaleString()}</td>
+        <td>₩${avgPrice.toLocaleString()}</td>
+        <td>₩${curPrice.toLocaleString()}</td>
+        <td>₩${evalAmt.toLocaleString()}</td>
+        <td class="${rateClass}">${rateSign}${pnlRate.toFixed(2)}%</td>
+      </tr>`;
+    }).join('');
+  } catch(e) {
+    tbody.innerHTML = `<tr><td colspan="6" style="color:var(--danger);padding:16px">${e.message}</td></tr>`;
+  }
+}
+
+async function loadTrades(page = 1) {
+  currentPage = page;
+  const tbody = document.getElementById('tradeBody');
+  try {
+    const data = await apiFetch(`/api/accounts/${accountId}/trades?page=${page}&per_page=15`);
+    document.getElementById('tradePager').textContent = `총 ${data.total}건`;
+
+    if (!data.trades.length) {
+      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-muted);padding:24px">거래 내역이 없습니다</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = data.trades.map(t => {
+      const dt = t.executed_at ? new Date(t.executed_at).toLocaleString('ko-KR') : '-';
+      const side = t.side === 'BUY'
+        ? '<span class="badge badge-success">매수</span>'
+        : '<span class="badge badge-danger">매도</span>';
+      const status = t.status === 'FILLED'
+        ? '<span class="badge badge-success">체결</span>'
+        : t.status === 'FAILED'
+        ? '<span class="badge badge-danger">실패</span>'
+        : '<span class="badge badge-warning">대기</span>';
+      return `<tr>
+        <td>${dt}</td>
+        <td>${t.symbol_name || t.symbol}</td>
+        <td>${side}</td>
+        <td>${t.quantity.toLocaleString()}</td>
+        <td>₩${t.price.toLocaleString()}</td>
+        <td>₩${(t.amount||0).toLocaleString()}</td>
+        <td><span class="badge badge-primary">${t.strategy||'-'}</span></td>
+        <td>${status}</td>
+      </tr>`;
+    }).join('');
+
+    // 페이지네이션
+    const btns = document.getElementById('paginationBtns');
+    btns.innerHTML = '';
+    for (let p = 1; p <= data.pages; p++) {
+      const btn = document.createElement('button');
+      btn.className = `btn btn-sm ${p === page ? 'btn-primary' : 'btn-outline'}`;
+      btn.textContent = p;
+      btn.onclick = () => loadTrades(p);
+      btns.appendChild(btn);
+    }
+  } catch(e) {
+    tbody.innerHTML = `<tr><td colspan="8" style="color:var(--danger);padding:16px">${e.message}</td></tr>`;
+  }
+}
+
+async function loadLogs() {
+  try {
+    const logs = await apiFetch(`/api/accounts/${accountId}/logs`);
+    const el = document.getElementById('logList');
+    if (!logs.length) {
+      el.innerHTML = '<p style="color:var(--text-muted);padding:16px;text-align:center">로그가 없습니다</p>';
+      return;
+    }
+    el.innerHTML = logs.map(l => {
+      const colors = { SIGNAL: '#4f7cff', ERROR: '#ef4444', STRATEGY_CHANGE: '#22c55e', INFO: '#94a3b8' };
+      const color = colors[l.event_type] || '#94a3b8';
+      const dt = l.created_at ? new Date(l.created_at).toLocaleString('ko-KR') : '';
+      return `<div style="padding:6px 12px;border-bottom:1px solid var(--border)">
+        <span style="color:${color};margin-right:8px">[${l.event_type}]</span>
+        <span style="color:var(--text-muted);margin-right:8px">${dt}</span>
+        <span>${l.message || ''}</span>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    document.getElementById('logList').textContent = e.message;
+  }
+}
+
+async function submitEdit() {
+  try {
+    await apiFetch(`/api/accounts/${accountId}`, {
+      method: 'PUT',
+      body: JSON.stringify({
+        name: document.getElementById('edit_name').value,
+        investment_limit: document.getElementById('edit_limit').value,
+        app_key: document.getElementById('edit_key').value || undefined,
+        app_secret: document.getElementById('edit_secret').value || undefined,
+      }),
+    });
+    showAlert('저장되었습니다.', 'success');
+    closeModal('editAccountModal');
+    setTimeout(() => location.reload(), 800);
+  } catch(e) {
+    showAlert(e.message);
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  loadHoldings();
+  loadTrades();
+  loadLogs();
+});
+</script>
+{% endblock %}
