@@ -8,7 +8,6 @@ from models import db, User
 from config import Config
 
 auth_bp = Blueprint('auth', __name__)
-client = WebApplicationClient(Config.GOOGLE_CLIENT_ID)
 
 
 def get_google_provider_cfg():
@@ -37,6 +36,7 @@ def current_user():
 def login():
     if 'user_id' in session:
         return redirect(url_for('dashboard.index'))
+    client = WebApplicationClient(Config.GOOGLE_CLIENT_ID)
     google_cfg = get_google_provider_cfg()
     authorization_endpoint = google_cfg['authorization_endpoint']
     request_uri = client.prepare_request_uri(
@@ -54,6 +54,7 @@ def callback():
         flash('인증 코드가 없습니다.', 'danger')
         return redirect(url_for('auth.login_page'))
 
+    client = WebApplicationClient(Config.GOOGLE_CLIENT_ID)
     google_cfg = get_google_provider_cfg()
     token_endpoint = google_cfg['token_endpoint']
 
