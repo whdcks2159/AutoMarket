@@ -1,0 +1,375 @@
+{% extends 'base.html' %}
+{% block title %}대시보드 — AutoMarket{% endblock %}
+
+{% block head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>대시보드</h1>
+  <p>계좌 현황 및 자동매매 관리</p>
+</div>
+
+<!-- 계좌 없을 때 안내 -->
+{% if not accounts %}
+<div class="card" style="text-align:center;padding:48px">
+  <i class="fa-solid fa-wallet" style="font-size:3rem;color:var(--primary);opacity:.4;margin-bottom:16px;display:block"></i>
+  <h2 style="margin-bottom:8px">등록된 계좌가 없습니다</h2>
+  <p style="color:var(--text-muted);margin-bottom:24px">KIS API 키를 등록하여 자동매매를 시작하세요</p>
+  <button class="btn btn-primary" onclick="openModal('addAccountModal')">
+    <i class="fa-solid fa-plus"></i> 계좌 추가하기
+  </button>
+</div>
+{% else %}
+
+<!-- 계좌 카드 목록 -->
+<div class="grid grid-2" id="accountList">
+  {% for account in accounts %}
+  <div class="card account-card" data-id="{{ account.id }}">
+    <div class="card-header">
+      <div>
+        <div class="card-title">{{ account.name }}</div>
+        <div style="color:var(--text-muted);font-size:.8rem;margin-top:2px">
+          {{ account.account_number }} · {{ account.market_type }}
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <label class="toggle" title="{{ '자동매매 ON' if account.is_active else '자동매매 OFF' }}">
+          <input type="checkbox" {% if account.is_active %}checked{% endif %}
+                 onchange="toggleActive({{ account.id }}, this)"/>
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+    </div>
+
+    <div style="margin-bottom:16px">
+      <span class="badge {% if account.is_active %}badge-success{% else %}badge-warning{% endif %}">
+        <i class="fa-solid fa-circle" style="font-size:.5rem"></i>
+        {{ '자동매매 ON' if account.is_active else '자동매매 OFF' }}
+      </span>
+      {% if account.strategy %}
+      <span class="badge badge-primary" style="margin-left:6px">
+        {{ strategy_labels.get(account.strategy, account.strategy) }}
+      </span>
+      {% else %}
+      <span class="badge badge-danger" style="margin-left:6px">전략 미설정</span>
+      {% endif %}
+    </div>
+
+    <div class="grid grid-2" style="gap:12px;margin-bottom:16px">
+      <div style="background:var(--surface2);border-radius:8px;padding:12px">
+        <div style="font-size:.75rem;color:var(--text-muted)">투자 한도</div>
+        <div style="font-weight:600;margin-top:4px">₩{{ '{:,.0f}'.format(account.investment_limit) }}</div>
+      </div>
+      <div style="background:var(--surface2);border-radius:8px;padding:12px" id="balance-{{ account.id }}">
+        <div style="font-size:.75rem;color:var(--text-muted)">잔고</div>
+        <div style="font-weight:600;margin-top:4px;color:var(--text-muted)">불러오는 중...</div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <a href="/account/{{ account.id }}" class="btn btn-outline btn-sm">
+        <i class="fa-solid fa-chart-line"></i> 상세보기
+      </a>
+      <button class="btn btn-outline btn-sm" onclick="openStrategyModal({{ account.id }}, '{{ account.strategy or '' }}')">
+        <i class="fa-solid fa-sliders"></i> 전략 변경
+      </button>
+      <button class="btn btn-danger btn-sm" onclick="deleteAccount({{ account.id }})">
+        <i class="fa-solid fa-trash"></i>
+      </button>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- 차트 섹션 -->
+<div class="card" style="margin-top:24px">
+  <div class="card-header">
+    <div class="card-title">전략별 누적 손익</div>
+    <select class="form-control" style="width:auto" id="chartAccountSelect" onchange="loadChart()">
+      {% for account in accounts %}
+      <option value="{{ account.id }}">{{ account.name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <canvas id="pnlChart" height="80"></canvas>
+</div>
+
+<!-- 최근 거래 내역 -->
+<div class="card" style="margin-top:24px">
+  <div class="card-header">
+    <div class="card-title">최근 매매 내역</div>
+  </div>
+  <div class="table-wrap">
+    <table id="tradeTable">
+      <thead>
+        <tr>
+          <th>시간</th><th>계좌</th><th>종목</th><th>구분</th>
+          <th>수량</th><th>가격</th><th>금액</th><th>전략</th><th>상태</th>
+        </tr>
+      </thead>
+      <tbody id="tradeBody">
+        <tr><td colspan="9" style="text-align:center;color:var(--text-muted);padding:32px">불러오는 중...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endif %}
+
+<!-- ── 계좌 추가 모달 ─────────────────────────────────────────── -->
+<div class="modal-overlay" id="addAccountModal">
+  <div class="modal">
+    <div class="modal-title">계좌 추가</div>
+    <div id="addAccountError"></div>
+    <div class="form-group">
+      <label class="form-label">계좌 별칭 *</label>
+      <input class="form-control" id="acc_name" placeholder="예) 국내 자동매매 계좌"/>
+    </div>
+    <div class="form-group">
+      <label class="form-label">계좌번호 * (8자리 + 상품코드)</label>
+      <input class="form-control" id="acc_number" placeholder="예) 5000000001"/>
+    </div>
+    <div class="form-group">
+      <label class="form-label">상품코드</label>
+      <input class="form-control" id="acc_product" placeholder="01" value="01"/>
+    </div>
+    <div class="form-group">
+      <label class="form-label">APP KEY *</label>
+      <input class="form-control" id="acc_key" type="password" placeholder="KIS 앱키"/>
+    </div>
+    <div class="form-group">
+      <label class="form-label">APP SECRET *</label>
+      <input class="form-control" id="acc_secret" type="password" placeholder="KIS 앱시크릿"/>
+    </div>
+    <div class="form-group">
+      <label class="form-label">시장</label>
+      <select class="form-control" id="acc_market">
+        <option value="KR">국내주</option>
+        <option value="US">미국주</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">투자 한도 (원)</label>
+      <input class="form-control" id="acc_limit" type="number" value="1000000"/>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('addAccountModal')">취소</button>
+      <button class="btn btn-primary" onclick="submitAddAccount()">추가</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── 전략 변경 모달 ─────────────────────────────────────────── -->
+<div class="modal-overlay" id="strategyModal">
+  <div class="modal">
+    <div class="modal-title">전략 변경</div>
+    <input type="hidden" id="strategyAccountId"/>
+    <div class="form-group">
+      <label class="form-label">새 전략 선택</label>
+      <select class="form-control" id="strategySelect">
+        {% for key, label in strategy_labels.items() %}
+        <option value="{{ key }}">{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">전환 방식</label>
+      <div style="display:flex;gap:12px;margin-top:8px">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+          <input type="radio" name="switchMode" value="soft" checked/>
+          <span>
+            <strong>소프트 스위치</strong><br>
+            <small style="color:var(--text-muted)">보유 종목 유지, 새 전략 적용</small>
+          </span>
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+          <input type="radio" name="switchMode" value="clean"/>
+          <span>
+            <strong>클린 스위치</strong><br>
+            <small style="color:var(--text-muted)">보유 종목 전량 매도 후 새 전략</small>
+          </span>
+        </label>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('strategyModal')">취소</button>
+      <button class="btn btn-primary" onclick="submitStrategyChange()">변경</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let pnlChart = null;
+
+// ── 잔고 로드 ─────────────────────────────────────────────────────
+async function loadBalances() {
+  {% for account in accounts %}
+  (async () => {
+    try {
+      const data = await apiFetch('/api/accounts/{{ account.id }}/balance');
+      const el = document.getElementById('balance-{{ account.id }}');
+      const output2 = data.output2 || {};
+      const cash = parseFloat(output2.dnca_tot_amt || output2.frcr_evlu_amt2 || 0);
+      el.querySelector('div:last-child').textContent = '₩' + cash.toLocaleString('ko-KR', {maximumFractionDigits: 0});
+    } catch(e) {
+      const el = document.getElementById('balance-{{ account.id }}');
+      if (el) el.querySelector('div:last-child').textContent = '조회 실패';
+    }
+  })();
+  {% endfor %}
+}
+
+// ── 최근 거래 로드 ────────────────────────────────────────────────
+async function loadRecentTrades() {
+  const tbody = document.getElementById('tradeBody');
+  if (!tbody) return;
+  try {
+    const summary = await apiFetch('/api/dashboard/summary');
+    const rows = [];
+    for (const item of summary) {
+      for (const t of item.recent_trades) {
+        const dt = t.executed_at ? new Date(t.executed_at).toLocaleString('ko-KR') : '-';
+        const side = t.side === 'BUY'
+          ? '<span class="badge badge-success">매수</span>'
+          : '<span class="badge badge-danger">매도</span>';
+        const status = t.status === 'FILLED'
+          ? '<span class="badge badge-success">체결</span>'
+          : t.status === 'FAILED'
+          ? '<span class="badge badge-danger">실패</span>'
+          : '<span class="badge badge-warning">대기</span>';
+        rows.push(`<tr>
+          <td>${dt}</td>
+          <td>${item.account.name}</td>
+          <td><strong>${t.symbol_name || t.symbol}</strong></td>
+          <td>${side}</td>
+          <td>${t.quantity.toLocaleString()}</td>
+          <td>₩${t.price.toLocaleString()}</td>
+          <td>₩${(t.amount||0).toLocaleString()}</td>
+          <td><span class="badge badge-primary">${t.strategy||'-'}</span></td>
+          <td>${status}</td>
+        </tr>`);
+      }
+    }
+    tbody.innerHTML = rows.length ? rows.join('') : '<tr><td colspan="9" style="text-align:center;color:var(--text-muted);padding:32px">거래 내역이 없습니다</td></tr>';
+  } catch(e) {
+    tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;color:var(--danger)">${e.message}</td></tr>`;
+  }
+}
+
+// ── 차트 로드 ─────────────────────────────────────────────────────
+async function loadChart() {
+  const select = document.getElementById('chartAccountSelect');
+  if (!select) return;
+  const accountId = select.value;
+  try {
+    const data = await apiFetch(`/api/dashboard/chart/${accountId}`);
+    const ctx = document.getElementById('pnlChart').getContext('2d');
+    if (pnlChart) pnlChart.destroy();
+    const colors = ['#4f7cff','#22c55e','#f59e0b','#ef4444','#a78bfa'];
+    const datasets = Object.entries(data.datasets).map(([strategy, values], i) => ({
+      label: strategy,
+      data: values,
+      borderColor: colors[i % colors.length],
+      backgroundColor: colors[i % colors.length] + '22',
+      tension: 0.4,
+      fill: true,
+    }));
+    pnlChart = new Chart(ctx, {
+      type: 'line',
+      data: { labels: data.labels, datasets },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { labels: { color: '#e2e8f0' } },
+          tooltip: { mode: 'index', intersect: false },
+        },
+        scales: {
+          x: { ticks: { color: '#94a3b8' }, grid: { color: '#2e3350' } },
+          y: { ticks: { color: '#94a3b8' }, grid: { color: '#2e3350' } },
+        },
+      },
+    });
+  } catch(e) {
+    console.error('차트 로드 실패:', e);
+  }
+}
+
+// ── 자동매매 토글 ─────────────────────────────────────────────────
+async function toggleActive(accountId, checkbox) {
+  try {
+    const data = await apiFetch(`/api/accounts/${accountId}/toggle`, { method: 'POST' });
+    showAlert(`자동매매 ${data.is_active ? 'ON' : 'OFF'}`, 'success');
+  } catch(e) {
+    checkbox.checked = !checkbox.checked;
+    showAlert(e.message);
+  }
+}
+
+// ── 계좌 추가 ─────────────────────────────────────────────────────
+async function submitAddAccount() {
+  const errEl = document.getElementById('addAccountError');
+  errEl.innerHTML = '';
+  const body = {
+    name: document.getElementById('acc_name').value,
+    account_number: document.getElementById('acc_number').value,
+    account_product: document.getElementById('acc_product').value || '01',
+    app_key: document.getElementById('acc_key').value,
+    app_secret: document.getElementById('acc_secret').value,
+    market_type: document.getElementById('acc_market').value,
+    investment_limit: document.getElementById('acc_limit').value,
+  };
+  try {
+    await apiFetch('/api/accounts', { method: 'POST', body: JSON.stringify(body) });
+    location.reload();
+  } catch(e) {
+    errEl.innerHTML = `<div class="alert alert-danger">${e.message}</div>`;
+  }
+}
+
+// ── 전략 변경 모달 열기 ───────────────────────────────────────────
+function openStrategyModal(accountId, currentStrategy) {
+  document.getElementById('strategyAccountId').value = accountId;
+  if (currentStrategy) document.getElementById('strategySelect').value = currentStrategy;
+  openModal('strategyModal');
+}
+
+async function submitStrategyChange() {
+  const accountId = document.getElementById('strategyAccountId').value;
+  const strategy = document.getElementById('strategySelect').value;
+  const mode = document.querySelector('input[name="switchMode"]:checked').value;
+  try {
+    await apiFetch(`/api/accounts/${accountId}/strategy`, {
+      method: 'POST',
+      body: JSON.stringify({ strategy, mode }),
+    });
+    showAlert('전략이 변경되었습니다.', 'success');
+    closeModal('strategyModal');
+    setTimeout(() => location.reload(), 1000);
+  } catch(e) {
+    showAlert(e.message);
+  }
+}
+
+// ── 계좌 삭제 ─────────────────────────────────────────────────────
+async function deleteAccount(accountId) {
+  if (!confirm('계좌를 삭제하면 모든 거래 기록도 삭제됩니다. 계속하시겠습니까?')) return;
+  try {
+    await apiFetch(`/api/accounts/${accountId}`, { method: 'DELETE' });
+    location.reload();
+  } catch(e) {
+    showAlert(e.message);
+  }
+}
+
+// 페이지 로드
+document.addEventListener('DOMContentLoaded', () => {
+  loadBalances();
+  loadRecentTrades();
+  loadChart();
+});
+</script>
+{% endblock %}

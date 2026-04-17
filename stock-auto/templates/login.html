@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AutoMarket — 로그인</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #0f1117;
+      color: #e2e8f0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .login-wrap {
+      width: 420px;
+      padding: 48px 40px;
+      background: #1a1d27;
+      border: 1px solid #2e3350;
+      border-radius: 16px;
+      text-align: center;
+    }
+    .logo { font-size: 2rem; font-weight: 800; color: #4f7cff; margin-bottom: 8px; }
+    .logo span { color: #e2e8f0; }
+    .tagline { color: #94a3b8; font-size: .9rem; margin-bottom: 40px; line-height: 1.6; }
+    .features { text-align: left; margin-bottom: 36px; }
+    .feature-item {
+      display: flex; align-items: flex-start; gap: 12px;
+      margin-bottom: 16px; font-size: .875rem;
+    }
+    .feature-icon {
+      width: 32px; height: 32px; border-radius: 8px;
+      background: rgba(79,124,255,.15); color: #4f7cff;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .feature-text strong { display: block; color: #e2e8f0; margin-bottom: 2px; }
+    .feature-text span { color: #94a3b8; font-size: .8rem; }
+    .google-btn {
+      display: flex; align-items: center; justify-content: center; gap: 12px;
+      width: 100%; padding: 14px; background: #fff; color: #1f2937;
+      border: none; border-radius: 10px; font-size: 1rem; font-weight: 600;
+      cursor: pointer; transition: all .2s; text-decoration: none;
+    }
+    .google-btn:hover { background: #f0f0f0; transform: translateY(-1px); box-shadow: 0 4px 16px rgba(0,0,0,.3); }
+    .google-icon { width: 20px; height: 20px; }
+    .disclaimer { font-size: .75rem; color: #64748b; margin-top: 20px; line-height: 1.5; }
+  </style>
+</head>
+<body>
+  <div class="login-wrap">
+    <div class="logo">Auto<span>Market</span></div>
+    <p class="tagline">한국투자증권 KIS API 기반<br>개인 자동매매 플랫폼</p>
+
+    <div class="features">
+      <div class="feature-item">
+        <div class="feature-icon"><svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zM0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8z"/><path d="M5.255 5.786a.237.237 0 0 0 .241.247h.825c.138 0 .248-.113.266-.25.09-.656.54-1.134 1.342-1.134.686 0 1.314.343 1.314 1.168 0 .635-.374.927-.965 1.371-.673.489-1.206 1.06-1.168 1.987l.003.217a.25.25 0 0 0 .25.246h.811a.25.25 0 0 0 .25-.25v-.105c0-.718.273-.927 1.01-1.486.609-.463 1.244-.977 1.244-2.056 0-1.511-1.276-2.241-2.673-2.241-1.267 0-2.655.59-2.75 2.286zm1.557 5.763c0 .533.425.927 1.01.927.609 0 1.028-.394 1.028-.927 0-.552-.42-.94-1.029-.94-.584 0-1.009.388-1.009.94z"/></svg></div>
+        <div class="feature-text">
+          <strong>4가지 검증된 전략</strong>
+          <span>골든크로스·RSI, 듀얼 모멘텀, 52주 신고가, 변동성 돌파</span>
+        </div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-icon"><svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M8 3.5a.5.5 0 0 0-1 0V9a.5.5 0 0 0 .252.434l3.5 2a.5.5 0 0 0 .496-.868L8 8.71V3.5z"/><path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm7-8A7 7 0 1 1 1 8a7 7 0 0 1 14 0z"/></svg></div>
+        <div class="feature-text">
+          <strong>완전 자동 실행</strong>
+          <span>스케줄러가 전략 시간표대로 자동 매매 실행</span>
+        </div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-icon"><svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M8 1a2 2 0 0 1 2 2v4H6V3a2 2 0 0 1 2-2zm3 6V3a3 3 0 0 0-6 0v4a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/></svg></div>
+        <div class="feature-text">
+          <strong>API 키 AES-256 암호화</strong>
+          <span>계좌 정보는 암호화되어 안전하게 보관</span>
+        </div>
+      </div>
+    </div>
+
+    <a href="/login" class="google-btn">
+      <svg class="google-icon" viewBox="0 0 48 48">
+        <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+        <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+        <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+        <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+      </svg>
+      Google로 로그인
+    </a>
+
+    <p class="disclaimer">
+      본 서비스는 투자 자문이 아닌 자동매매 툴 제공 서비스입니다.<br>
+      모든 투자 결정과 책임은 사용자 본인에게 있습니다.
+    </p>
+  </div>
+</body>
+</html>
