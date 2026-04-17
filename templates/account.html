@@ -107,6 +107,23 @@
       <input class="form-control" id="edit_limit" type="number" value="{{ account.investment_limit }}"/>
     </div>
     <div class="form-group">
+      <label class="form-label">투자 전략</label>
+      <select class="form-control" id="edit_strategy">
+        <option value="" {% if not account.strategy %}selected{% endif %}>전략 미설정</option>
+        <option value="golden_rsi" {% if account.strategy == 'golden_rsi' %}selected{% endif %}>골든 RSI</option>
+        <option value="week52_high" {% if account.strategy == 'week52_high' %}selected{% endif %}>52주 신고가</option>
+        <option value="volatility_breakout" {% if account.strategy == 'volatility_breakout' %}selected{% endif %}>변동성 돌파</option>
+        <option value="dual_momentum" {% if account.strategy == 'dual_momentum' %}selected{% endif %}>듀얼 모멘텀</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">자동매매</label>
+      <select class="form-control" id="edit_active">
+        <option value="false" {% if not account.is_active %}selected{% endif %}>비활성</option>
+        <option value="true" {% if account.is_active %}selected{% endif %}>활성</option>
+      </select>
+    </div>
+    <div class="form-group">
       <label class="form-label">APP KEY (변경 시만 입력)</label>
       <input class="form-control" id="edit_key" type="password" placeholder="변경하지 않으면 비워두세요"/>
     </div>
@@ -243,6 +260,8 @@ async function submitEdit() {
       body: JSON.stringify({
         name: document.getElementById('edit_name').value,
         investment_limit: document.getElementById('edit_limit').value,
+        strategy: document.getElementById('edit_strategy').value || null,
+        is_active: document.getElementById('edit_active').value === 'true',
         app_key: document.getElementById('edit_key').value || undefined,
         app_secret: document.getElementById('edit_secret').value || undefined,
       }),
