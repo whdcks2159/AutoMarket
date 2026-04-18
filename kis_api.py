@@ -170,8 +170,10 @@ class KISClient:
         return resp.json()
 
     def get_balance_us(self) -> dict:
+        if self.mock_mode:
+            return {"output1": [], "output2": {"ovrs_tot_pfls": "0", "tot_evlu_pfls_amt": "0"}, "rt_cd": "0", "msg_cd": "MOCK", "msg1": "MOCK MODE"}
+        # 보유주식 잔고
         url = f"{self.base_url}/uapi/overseas-stock/v1/trading/inquire-balance"
-        tr_id = "VTTS3012R" if self.mock_mode else "TTTS3012R"
         params = {
             "CANO": self.account_number[:8],
             "ACNT_PRDT_CD": self.account_product,
@@ -180,9 +182,31 @@ class KISClient:
             "CTX_AREA_FK200": "",
             "CTX_AREA_NK200": "",
         }
-        resp = requests.get(url, headers=self._headers(tr_id), params=params, timeout=10)
+        resp = requests.get(url, headers=self._headers("TTTS3012R"), params=params, timeout=10)
         resp.raise_for_status()
-        return resp.json()
+        holdings = resp.json()
+
+        # 외화 예수금 조회
+        cash_url = f"{self.base_url}/uapi/overseas-stock/v1/trading/inquire-present-balance"
+        cash_params = {
+            "CANO": self.account_number[:8],
+            "ACNT_PRDT_CD": self.account_product,
+            "WCRC_FRCR_DVSN_CD": "02",
+            "NATN_CD": "840",
+            "TR_MKET_CD": "00",
+            "INQR_DVSN_CD": "00",
+        }
+        try:
+            cash_resp = requests.get(cash_url, headers=self._headers("CTRP6504R"), params=cash_params, timeout=10)
+            cash_resp.raise_for_status()
+            cash_data = cash_resp.json()
+            output3 = cash_data.get('output3', [{}])
+            frcr_cash = output3[0].get('frcr_dncl_amt_2', '0') if output3 else '0'
+            holdings['frcr_dncl_amt_2'] = frcr_cash
+        except Exception:
+            holdings['frcr_dncl_amt_2'] = '0'
+
+        return holdings
 
     # ─── 주문 ───────────────────────────────────────────────────────────────────
 
