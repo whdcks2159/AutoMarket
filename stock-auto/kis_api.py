@@ -168,8 +168,11 @@ class KISClient:
         return resp.json()
 
     def get_balance_us(self) -> dict:
+        if self.mock_mode:
+            # VTS mock server does not support overseas balance inquiry
+            return {"output1": [], "output2": {"ovrs_tot_pfls": "0", "tot_evlu_pfls_amt": "0"}, "rt_cd": "0", "msg_cd": "MOCK", "msg1": "MOCK MODE"}
         url = f"{self.base_url}/uapi/overseas-stock/v1/trading/inquire-balance"
-        tr_id = "VTTS3012R" if self.mock_mode else "TTTS3012R"
+        tr_id = "TTTS3012R"
         params = {
             "CANO": self.account_number[:8],
             "ACNT_PRDT_CD": self.account_product,
