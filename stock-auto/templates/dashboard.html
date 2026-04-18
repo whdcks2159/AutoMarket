@@ -220,18 +220,22 @@ async function loadBalances() {
   (async () => {
     try {
       const data = await apiFetch('/api/accounts/{{ account.id }}/balance');
-      console.log('balance raw:', JSON.stringify(data));
       const el = document.getElementById('balance-{{ account.id }}');
       if (data.msg_cd === 'MOCK') {
         el.querySelector('div:last-child').textContent = '모의투자 모드';
         el.querySelector('div:last-child').style.color = 'var(--warning)';
       } else {
         const output2 = Array.isArray(data.output2) ? data.output2[0] : (data.output2 || {});
-        const cash = parseFloat(output2.dnca_tot_amt || output2.frcr_evlu_amt2 || 0);
-        el.querySelector('div:last-child').textContent = '₩' + cash.toLocaleString('ko-KR', {maximumFractionDigits: 0});
+        const isUS = '{{ account.market_type }}' === 'US';
+        if (isUS) {
+          const usd = parseFloat(output2.frcr_evlu_amt2 || output2.tot_evlu_pfls_amt || 0);
+          el.querySelector('div:last-child').textContent = '$' + usd.toLocaleString('en-US', {maximumFractionDigits: 2});
+        } else {
+          const krw = parseFloat(output2.dnca_tot_amt || 0);
+          el.querySelector('div:last-child').textContent = '₩' + krw.toLocaleString('ko-KR', {maximumFractionDigits: 0});
+        }
       }
     } catch(e) {
-      console.log('balance error {{ account.id }}:', e.message);
       const el = document.getElementById('balance-{{ account.id }}');
       if (el) el.querySelector('div:last-child').textContent = '조회 실패';
     }
