@@ -231,6 +231,7 @@ async function loadBalances() {
         el.querySelector('div:last-child').textContent = '₩' + cash.toLocaleString('ko-KR', {maximumFractionDigits: 0});
       }
     } catch(e) {
+      console.log('balance error {{ account.id }}:', e.message);
       const el = document.getElementById('balance-{{ account.id }}');
       if (el) el.querySelector('div:last-child').textContent = '조회 실패';
     }
