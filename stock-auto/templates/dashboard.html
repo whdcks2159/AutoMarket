@@ -222,8 +222,13 @@ async function loadBalances() {
       const data = await apiFetch('/api/accounts/{{ account.id }}/balance');
       const el = document.getElementById('balance-{{ account.id }}');
       const output2 = data.output2 || {};
-      const cash = parseFloat(output2.dnca_tot_amt || output2.frcr_evlu_amt2 || 0);
-      el.querySelector('div:last-child').textContent = '₩' + cash.toLocaleString('ko-KR', {maximumFractionDigits: 0});
+      if (data.msg_cd === 'MOCK') {
+        el.querySelector('div:last-child').textContent = '모의투자 모드';
+        el.querySelector('div:last-child').style.color = 'var(--warning)';
+      } else {
+        const cash = parseFloat(output2.dnca_tot_amt || output2.frcr_evlu_amt2 || 0);
+        el.querySelector('div:last-child').textContent = '₩' + cash.toLocaleString('ko-KR', {maximumFractionDigits: 0});
+      }
     } catch(e) {
       const el = document.getElementById('balance-{{ account.id }}');
       if (el) el.querySelector('div:last-child').textContent = '조회 실패';
