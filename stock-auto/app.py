@@ -9,6 +9,9 @@ def create_app(config_name: str = None) -> Flask:
     cfg_name = config_name or os.environ.get('FLASK_ENV', 'default')
     app.config.from_object(config[cfg_name])
 
+    from werkzeug.middleware.proxy_fix import ProxyFix
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
+
     db.init_app(app)
 
     with app.app_context():
