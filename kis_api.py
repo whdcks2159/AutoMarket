@@ -148,8 +148,10 @@ class KISClient:
     # ─── 잔고 조회 ──────────────────────────────────────────────────────────────
 
     def get_balance_kr(self) -> dict:
+        if self.mock_mode:
+            return {"output1": [], "output2": {"dnca_tot_amt": "0", "tot_evlu_amt": "0"}, "rt_cd": "0", "msg_cd": "MOCK", "msg1": "MOCK MODE"}
         url = f"{self.base_url}/uapi/domestic-stock/v1/trading/inquire-balance"
-        tr_id = "VTTC8434R" if self.mock_mode else "TTTC8434R"
+        tr_id = "TTTC8434R"
         params = {
             "CANO": self.account_number[:8],
             "ACNT_PRDT_CD": self.account_product,

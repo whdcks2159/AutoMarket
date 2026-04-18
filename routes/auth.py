@@ -1,7 +1,7 @@
 import json
 import requests
 from functools import wraps
-from flask import Blueprint, redirect, url_for, session, request, flash, current_app
+from flask import Blueprint, redirect, url_for, session, request, flash, current_app, jsonify
 from oauthlib.oauth2 import WebApplicationClient
 
 from models import db, User
@@ -18,9 +18,13 @@ def login_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
         if 'user_id' not in session:
+            if request.path.startswith('/api/'):
+                return jsonify({'error': '로그인이 필요합니다.'}), 401
             return redirect(url_for('auth.login'))
         if not User.query.get(session['user_id']):
             session.clear()
+            if request.path.startswith('/api/'):
+                return jsonify({'error': '로그인이 필요합니다.'}), 401
             return redirect(url_for('auth.login'))
         return f(*args, **kwargs)
     return decorated
@@ -90,6 +94,7 @@ def callback():
         user.picture = picture
         db.session.commit()
 
+    session.permanent = True
     session['user_id'] = user.id
     return redirect(url_for('dashboard.index'))
 
