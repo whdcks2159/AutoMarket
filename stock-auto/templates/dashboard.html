@@ -220,6 +220,7 @@ async function loadBalances() {
   (async () => {
     try {
       const data = await apiFetch('/api/accounts/{{ account.id }}/balance');
+      console.log('balance raw:', JSON.stringify(data));
       const el = document.getElementById('balance-{{ account.id }}');
       if (data.msg_cd === 'MOCK') {
         el.querySelector('div:last-child').textContent = '모의투자 모드';
