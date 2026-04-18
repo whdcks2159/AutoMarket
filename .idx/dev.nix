@@ -15,28 +15,7 @@
     # Search for the extensions you want on https://open-vsx.org/ and use "publisher.id"
     extensions = [
       # "vscodevim.vim"
-      "google.gemini-cli-vscode-ide-companion"
-    ];
-    # Enable previews and customize configuration
-    previews = {
-      enable = true;
-      previews = {
-        web = {
-          command = ["bash" "-c" "cd stock-auto && source venv/bin/activate && python app.py"];
-          manager = "web";
-          port = 5000;
-        };
-      };
-    };
-    # Workspace lifecycle hooks
-    workspace = {
-      # Runs when a workspace is first created
-      onCreate = {
-        # Example: install JS dependencies from NPM
-        # npm-install = "npm install";
-        # Open editors for the following files by default, if they exist:
-        default.openFiles = [ "style.css" "main.js" "index.html" ];
-      };
+      "google.gemini-cli-vsco
       # Runs when the workspace is (re)started
       onStart = {
         # Example: start a background task to watch and re-build backend code

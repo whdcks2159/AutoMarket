@@ -75,12 +75,42 @@
       <button class="btn btn-outline btn-sm" onclick="openStrategyModal({{ account.id }}, '{{ account.strategy or '' }}')">
         <i class="fa-solid fa-sliders"></i> 전략 변경
       </button>
+      <button class="btn btn-outline btn-sm" onclick="openScreenerModal({{ account.id }}, '{{ account.market_type }}')">
+        <i class="fa-solid fa-magnifying-glass-chart"></i> 스크리너
+      </button>
       <button class="btn btn-danger btn-sm" onclick="deleteAccount({{ account.id }})">
         <i class="fa-solid fa-trash"></i>
       </button>
     </div>
   </div>
   {% endfor %}
+</div>
+
+<!-- 스캔 결과 섹션 -->
+<div class="card" style="margin-top:24px" id="scanResultSection">
+  <div class="card-header">
+    <div class="card-title"><i class="fa-solid fa-radar" style="color:var(--primary)"></i> 스크리너 스캔 결과</div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <select class="form-control" style="width:auto;font-size:.8rem" id="scanAccountSelect" onchange="loadScanResults()">
+        {% for account in accounts %}
+        <option value="{{ account.id }}">{{ account.name }}</option>
+        {% endfor %}
+      </select>
+      <button class="btn btn-outline btn-sm" onclick="loadScanResults()">
+        <i class="fa-solid fa-rotate"></i> 새로고침
+      </button>
+    </div>
+  </div>
+  <div class="table-wrap">
+    <table id="scanTable">
+      <thead>
+        <tr><th>시간</th><th>전략</th><th>종목</th><th>신호</th><th>사유</th></tr>
+      </thead>
+      <tbody id="scanBody">
+        <tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:24px">계좌를 선택하면 스캔 결과가 표시됩니다</td></tr>
+      </tbody>
+    </table>
+  </div>
 </div>
 
 <!-- 차트 섹션 -->
@@ -166,6 +196,72 @@
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeModal('addAccountModal')">취소</button>
       <button class="btn btn-primary" onclick="submitAddAccount()">추가</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── 스크리너 설정 모달 ──────────────────────────────────────── -->
+<div class="modal-overlay" id="screenerModal">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-title"><i class="fa-solid fa-magnifying-glass-chart"></i> 스크리너 설정</div>
+    <input type="hidden" id="screenerAccountId"/>
+    <input type="hidden" id="screenerMarket"/>
+
+    <div class="form-group" style="display:flex;align-items:center;justify-content:space-between">
+      <label class="form-label" style="margin-bottom:0">스크리너 활성화</label>
+      <label class="toggle">
+        <input type="checkbox" id="screenerEnabled"/>
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">스캔 대상</label>
+      <div id="screenerTargetsKR" style="display:flex;gap:12px;flex-wrap:wrap;margin-top:6px">
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+          <input type="checkbox" value="KOSPI" class="sc-target"/> 코스피
+        </label>
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+          <input type="checkbox" value="KOSDAQ" class="sc-target"/> 코스닥
+        </label>
+      </div>
+      <div id="screenerTargetsUS" style="display:flex;gap:12px;flex-wrap:wrap;margin-top:6px">
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+          <input type="checkbox" value="SP500" class="sc-target"/> S&amp;P 500
+        </label>
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+          <input type="checkbox" value="NASDAQ100" class="sc-target"/> NASDAQ 100
+        </label>
+      </div>
+    </div>
+
+    <div class="grid grid-2" style="gap:12px">
+      <div class="form-group">
+        <label class="form-label">최대 매수 종목 수 (1~10)</label>
+        <input class="form-control" id="screenerMaxSymbols" type="number" min="1" max="10" value="5"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">일일 최대 매수 횟수</label>
+        <input class="form-control" id="screenerDailyLimit" type="number" min="1" max="20" value="3"/>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" id="screenerLimitLabel">종목당 최대 투자 금액 (원)</label>
+      <input class="form-control" id="screenerPerSymbolLimit" type="number" value="500000"/>
+    </div>
+
+    <div style="border-top:1px solid var(--border);padding-top:16px;margin-top:8px">
+      <div style="font-size:.8rem;color:var(--text-muted);margin-bottom:10px">수동 스캔 실행</div>
+      <button class="btn btn-outline btn-sm" onclick="runManualScan()">
+        <i class="fa-solid fa-play"></i> 지금 스캔 실행
+      </button>
+      <span id="scanStatus" style="margin-left:10px;font-size:.8rem;color:var(--text-muted)"></span>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('screenerModal')">닫기</button>
+      <button class="btn btn-primary" onclick="submitScreenerConfig()">저장</button>
     </div>
   </div>
 </div>
@@ -392,11 +488,114 @@ async function deleteAccount(accountId) {
   }
 }
 
+// ── 스크리너 모달 ─────────────────────────────────────────────────
+async function openScreenerModal(accountId, market) {
+  document.getElementById('screenerAccountId').value = accountId;
+  document.getElementById('screenerMarket').value = market;
+
+  // 시장 타입별 타겟 UI 전환
+  document.getElementById('screenerTargetsKR').style.display = market === 'KR' ? 'flex' : 'none';
+  document.getElementById('screenerTargetsUS').style.display = market === 'US' ? 'flex' : 'none';
+  document.getElementById('screenerLimitLabel').textContent =
+    market === 'US' ? '종목당 최대 투자 금액 (원 기준, USD 환산)' : '종목당 최대 투자 금액 (원)';
+
+  try {
+    const cfg = await apiFetch(`/api/screener/config/${accountId}`);
+    document.getElementById('screenerEnabled').checked = cfg.screener_enabled;
+    document.getElementById('screenerMaxSymbols').value = cfg.screener_max_symbols;
+    document.getElementById('screenerPerSymbolLimit').value = cfg.screener_per_symbol_limit;
+    document.getElementById('screenerDailyLimit').value = cfg.screener_daily_buy_limit;
+
+    // 타겟 체크박스 복원
+    const targets = (cfg.screener_targets || '').split(',').map(t => t.trim());
+    document.querySelectorAll('.sc-target').forEach(cb => {
+      cb.checked = targets.includes(cb.value);
+    });
+  } catch(e) {
+    console.error('screener config load error:', e);
+  }
+  openModal('screenerModal');
+}
+
+async function submitScreenerConfig() {
+  const accountId = document.getElementById('screenerAccountId').value;
+  const targets = Array.from(document.querySelectorAll('.sc-target:checked')).map(cb => cb.value);
+
+  const body = {
+    screener_enabled: document.getElementById('screenerEnabled').checked,
+    screener_targets: targets.join(',') || (document.getElementById('screenerMarket').value === 'KR' ? 'KOSPI,KOSDAQ' : 'SP500'),
+    screener_max_symbols: parseInt(document.getElementById('screenerMaxSymbols').value),
+    screener_per_symbol_limit: parseFloat(document.getElementById('screenerPerSymbolLimit').value),
+    screener_daily_buy_limit: parseInt(document.getElementById('screenerDailyLimit').value),
+  };
+
+  try {
+    await apiFetch(`/api/screener/config/${accountId}`, {
+      method: 'PUT', body: JSON.stringify(body),
+    });
+    showAlert('스크리너 설정이 저장되었습니다.', 'success');
+    closeModal('screenerModal');
+  } catch(e) {
+    showAlert(e.message);
+  }
+}
+
+async function runManualScan() {
+  const accountId = document.getElementById('screenerAccountId').value;
+  const statusEl = document.getElementById('scanStatus');
+  statusEl.textContent = '스캔 중...';
+  try {
+    const data = await apiFetch(`/api/screener/scan/${accountId}`, { method: 'POST', body: '{}' });
+    statusEl.textContent = `완료: ${data.count}종목 발견`;
+    loadScanResults();
+  } catch(e) {
+    statusEl.textContent = `오류: ${e.message}`;
+  }
+}
+
+// ── 스캔 결과 로드 ────────────────────────────────────────────────
+async function loadScanResults() {
+  const select = document.getElementById('scanAccountSelect');
+  if (!select) return;
+  const accountId = select.value;
+  const tbody = document.getElementById('scanBody');
+  tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:16px">불러오는 중...</td></tr>';
+
+  try {
+    const results = await apiFetch(`/api/screener/results/${accountId}?limit=30&today=true`);
+    const strategyLabels = {
+      'golden_rsi': '골든RSI', 'dual_momentum': '듀얼모멘텀',
+      'week52_high': '52주신고가', 'volatility_breakout': '변동성돌파',
+    };
+    if (!results.length) {
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:24px">오늘 스캔 결과가 없습니다</td></tr>';
+      return;
+    }
+    tbody.innerHTML = results.map(r => {
+      const dt = r.scanned_at ? new Date(r.scanned_at + 'Z').toLocaleTimeString('ko-KR') : '-';
+      const badge = r.signal === 'BUY'
+        ? '<span class="badge badge-success">매수</span>'
+        : '<span class="badge badge-warning">관찰</span>';
+      const label = strategyLabels[r.strategy] || r.strategy;
+      return `<tr>
+        <td>${dt}</td>
+        <td><span class="badge badge-primary">${label}</span></td>
+        <td><strong>${r.ticker}</strong></td>
+        <td>${badge}</td>
+        <td style="font-size:.8rem;color:var(--text-muted)">${r.reason || '-'}</td>
+      </tr>`;
+    }).join('');
+  } catch(e) {
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--danger)">${e.message}</td></tr>`;
+  }
+}
+
 // 페이지 로드
 document.addEventListener('DOMContentLoaded', () => {
   loadBalances();
   loadRecentTrades();
   loadChart();
+  loadScanResults();
 });
 </script>
 {% endblock %}

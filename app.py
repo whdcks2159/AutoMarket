@@ -18,10 +18,12 @@ def create_app(config_name: str = None) -> Flask:
         from routes.auth import auth_bp
         from routes.account import account_bp
         from routes.dashboard import dashboard_bp
+        from routes.screener import screener_bp
 
         app.register_blueprint(auth_bp)
         app.register_blueprint(account_bp)
         app.register_blueprint(dashboard_bp)
+        app.register_blueprint(screener_bp)
 
         db.create_all()
 

@@ -54,6 +54,93 @@ def run_all_active_strategies(strategy_name: str):
             run_strategy_for_account(account.id, strategy_name)
 
 
+def run_screener_for_account(account_id: int, strategy_name: str, market: str):
+    """스크리너 활성화된 계좌에 대해 종목 스캔 실행."""
+    from app import app
+    with app.app_context():
+        from models import Account
+        from kis_api import KISClient
+
+        account = Account.query.get(account_id)
+        if not account or not account.is_active or not account.screener_enabled:
+            return
+        if account.strategy != strategy_name:
+            return
+
+        try:
+            kis = KISClient(account)
+            if market == 'KR':
+                from screener.korea_screener import KoreaScreener
+                sc = KoreaScreener(account, kis)
+                if strategy_name == 'golden_rsi':
+                    sc.scan_golden_rsi()
+                elif strategy_name == 'week52_high':
+                    sc.scan_week52_high()
+                elif strategy_name == 'volatility_breakout':
+                    sc.scan_volatility_breakout()
+            else:
+                from screener.us_screener import USScreener
+                sc = USScreener(account, kis)
+                if strategy_name == 'dual_momentum':
+                    sc.scan_dual_momentum()
+                elif strategy_name == 'week52_high':
+                    sc.scan_week52_high()
+                elif strategy_name == 'volatility_breakout':
+                    sc.scan_volatility_breakout()
+        except Exception as e:
+            logger.error("screener account=%s strategy=%s error=%s", account_id, strategy_name, e)
+
+
+def run_all_active_screeners(strategy_name: str, market: str):
+    from app import app
+    with app.app_context():
+        from models import Account
+        accounts = Account.query.filter_by(
+            strategy=strategy_name,
+            is_active=True,
+            screener_enabled=True,
+            market_type=market,
+        ).all()
+        for account in accounts:
+            run_screener_for_account(account.id, strategy_name, market)
+
+
+def job_screener_morning():
+    """장 시작 전 (08:50) 국내주 스크리너 실행."""
+    if not is_trading_day_kr():
+        return
+    logger.info("아침 스크리너 실행 (국내주)")
+    run_all_active_screeners('golden_rsi', 'KR')
+    run_all_active_screeners('week52_high', 'KR')
+    run_all_active_screeners('volatility_breakout', 'KR')
+
+
+def job_screener_us_morning():
+    """미국주 스크리너 — 매일 장 시작 전 (23:00 KST = 오전 10:00 EST)."""
+    if not is_trading_day_us():
+        return
+    logger.info("미국주 스크리너 실행")
+    run_all_active_screeners('week52_high', 'US')
+    run_all_active_screeners('volatility_breakout', 'US')
+
+
+def job_screener_dual_momentum():
+    """듀얼 모멘텀 스크리너 — 월초 첫 거래일."""
+    now = datetime.now(KST)
+    if now.day > 7:
+        return
+    first_trading = None
+    for day in range(1, 8):
+        d = now.replace(day=day)
+        if d.weekday() < 5:
+            first_trading = d.day
+            break
+    if now.day != first_trading:
+        return
+    logger.info("듀얼 모멘텀 스크리너 실행")
+    run_all_active_screeners('dual_momentum', 'US')
+
+
 def job_golden_rsi():
     if not is_trading_day_kr():
         logger.info("골든RSI: 오늘은 휴장일 — 스킵")
@@ -112,5 +199,14 @@ def create_scheduler() -> BackgroundScheduler:
 
     # 듀얼 모멘텀: 매월 첫 거래일 23:30
     scheduler.add_job(job_dual_momentum, CronTrigger(hour=23, minute=30, timezone=KST), id='dual_momentum')
+
+    # 스크리너: 장 시작 전 08:50 (국내주)
+    scheduler.add_job(job_screener_morning, CronTrigger(hour=8, minute=50, timezone=KST), id='screener_kr_morning')
+
+    # 스크리너: 미국주 23:00
+    scheduler.add_job(job_screener_us_morning, CronTrigger(hour=23, minute=0, timezone=KST), id='screener_us_morning')
+
+    # 스크리너: 듀얼 모멘텀 (월초 23:00)
+    scheduler.add_job(job_screener_dual_momentum, CronTrigger(hour=23, minute=0, timezone=KST), id='screener_dual_momentum')
 
     return scheduler

@@ -101,14 +101,22 @@ class KISClient:
     # ─── 시세 조회 ──────────────────────────────────────────────────────────────
 
     def get_price_kr(self, symbol: str) -> dict:
+        if self.mock_mode:
+            ohlcv = _mock_ohlcv_kr(symbol, 3)
+            price = ohlcv[-1]['stck_clpr'] if ohlcv else '50000'
+            return {'output': {'stck_prpr': price, 'stck_oprc': price, 'stck_hgpr': price, 'stck_lwpr': price}}
         url = f"{self.base_url}/uapi/domestic-stock/v1/quotations/inquire-price"
-        tr_id = "VTTC8434R" if self.mock_mode else "FHKST01010100"
+        tr_id = "FHKST01010100"
         params = {"fid_cond_mrkt_div_code": "J", "fid_input_iscd": symbol}
         resp = requests.get(url, headers=self._headers(tr_id), params=params, timeout=10)
         resp.raise_for_status()
         return resp.json()
 
     def get_price_us(self, symbol: str, exchange: str = "NAS") -> dict:
+        if self.mock_mode:
+            ohlcv = _mock_ohlcv_us(symbol, 3)
+            price = ohlcv[-1]['clos'] if ohlcv else '100.0'
+            return {'output': {'last': price, 'open': price, 'high': price, 'low': price}}
         url = f"{self.base_url}/uapi/overseas-price/v1/quotations/price"
         tr_id = "HHDFS00000300"
         params = {"AUTH": "", "EXCD": exchange, "SYMB": symbol}
@@ -117,9 +125,10 @@ class KISClient:
         return resp.json()
 
     def get_daily_ohlcv_kr(self, symbol: str, period: int = 120) -> list:
+        if self.mock_mode:
+            return _mock_ohlcv_kr(symbol, period)
         url = f"{self.base_url}/uapi/domestic-stock/v1/quotations/inquire-daily-price"
         tr_id = "FHKST01010400"
-        end_date = datetime.now().strftime('%Y%m%d')
         params = {
             "fid_cond_mrkt_div_code": "J",
             "fid_input_iscd": symbol,
@@ -131,6 +140,8 @@ class KISClient:
         return resp.json().get('output2', [])
 
     def get_daily_ohlcv_us(self, symbol: str, exchange: str = "NAS", period: int = 120) -> list:
+        if self.mock_mode:
+            return _mock_ohlcv_us(symbol, period)
         url = f"{self.base_url}/uapi/overseas-price/v1/quotations/dailyprice"
         tr_id = "HHDFS76240000"
         params = {
@@ -144,6 +155,31 @@ class KISClient:
         resp = requests.get(url, headers=self._headers(tr_id), params=params, timeout=10)
         resp.raise_for_status()
         return resp.json().get('output2', [])
+
+    # ─── 스크리너 조회 ──────────────────────────────────────────────────────────
+
+    def get_volume_rank_kr(self, market_div: str = 'J') -> list:
+        """거래량 순위 상위 종목 조회 (J=KOSPI, Q=KOSDAQ)"""
+        if self.mock_mode:
+            return _mock_volume_rank_kr(market_div)
+
+        url = f"{self.base_url}/uapi/domestic-stock/v1/ranking/volume"
+        tr_id = "FHPST01710000"
+        params = {
+            "fid_cond_mrkt_div_code": market_div,
+            "fid_cond_scr_div_code": "20171",
+            "fid_input_iscd": "0000",
+            "fid_rank_sort_cls_code": "0",
+            "fid_input_cnt_1": "0",
+            "fid_prc_cls_code": "1",
+            "fid_trgt_cls_code": "111111111",
+            "fid_trgt_exls_cls_code": "0000000000",
+            "fid_div_cls_code": "0",
+            "fid_vol_cnt": "100000",
+        }
+        resp = requests.get(url, headers=self._headers(tr_id), params=params, timeout=15)
+        resp.raise_for_status()
+        return resp.json().get('output', [])
 
     # ─── 잔고 조회 ──────────────────────────────────────────────────────────────
 
@@ -250,6 +286,22 @@ class KISClient:
         resp.raise_for_status()
         return resp.json()
 
+    def get_stock_info_kr(self, symbol: str) -> dict:
+        """종목 기본 정보 (시가총액 포함) — 스크리너 필터용"""
+        if self.mock_mode:
+            mock_info = {
+                '005930': {'hts_avls': '4485000', 'acml_vol': '15000000', 'stck_prpr': '75000'},
+                '000660': {'hts_avls': '1050000', 'acml_vol': '8000000', 'stck_prpr': '145000'},
+                '035420': {'hts_avls': '280000', 'acml_vol': '2000000', 'stck_prpr': '190000'},
+            }
+            return {'output': mock_info.get(symbol, {'hts_avls': '600000', 'acml_vol': '150000', 'stck_prpr': '50000'})}
+        url = f"{self.base_url}/uapi/domestic-stock/v1/quotations/inquire-price"
+        tr_id = "FHKST01010100"
+        params = {"fid_cond_mrkt_div_code": "J", "fid_input_iscd": symbol}
+        resp = requests.get(url, headers=self._headers(tr_id), params=params, timeout=10)
+        resp.raise_for_status()
+        return resp.json()
+
     def order_with_retry(self, symbol: str, side: str, quantity: int,
                          price: float = 0, market: str = 'KR',
                          exchange: str = 'NAS', max_retry: int = 3) -> dict:
@@ -265,3 +317,81 @@ class KISClient:
                 import time
                 time.sleep(2 ** attempt)
         raise last_err
+
+
+# ─── 모의 데이터 ────────────────────────────────────────────────────────────────
+
+def _mock_ohlcv_kr(symbol: str, period: int = 120) -> list:
+    """국내주 일봉 모의 데이터 — 실제 API처럼 최신 날짜가 index 0."""
+    import random
+    rng = random.Random(hash(symbol) % 10000)
+    base = {'005930': 75000, '000660': 145000, '005380': 210000}.get(symbol, 50000)
+    rows = []
+    price = base * 0.80  # 과거는 낮은 가격 → 상승 추세로 골든크로스 유도
+    for i in range(period):  # 0 = 가장 오래된 날, period-1 = 가장 최근
+        price = price * 1.0015 * (1 + rng.uniform(-0.008, 0.012))
+        price = max(price, 100)
+        high = price * (1 + rng.uniform(0.001, 0.018))
+        low = price * (1 - rng.uniform(0.001, 0.018))
+        rows.append({
+            'stck_bsop_date': f'202501{(i % 28) + 1:02d}',
+            'stck_oprc': str(int(price * 0.999)),
+            'stck_hgpr': str(int(high)),
+            'stck_lwpr': str(int(low)),
+            'stck_clpr': str(int(price)),
+            'acml_vol': str(rng.randint(500000, 5000000)),
+        })
+    rows.reverse()  # 최신 날짜가 index 0 (실제 KIS API 순서)
+    return rows
+
+
+def _mock_ohlcv_us(symbol: str, period: int = 120) -> list:
+    """미국주 일봉 모의 데이터 — 최신 날짜가 index 0."""
+    import random
+    rng = random.Random(hash(symbol) % 20000)
+    base = {'AAPL': 185.0, 'MSFT': 420.0, 'NVDA': 875.0, 'AMZN': 185.0}.get(symbol, 100.0)
+    rows = []
+    price = base * 0.70
+    for i in range(period):
+        price = price * 1.002 * (1 + rng.uniform(-0.01, 0.015))
+        price = max(price, 1.0)
+        high = price * (1 + rng.uniform(0.001, 0.025))
+        low = price * (1 - rng.uniform(0.001, 0.025))
+        rows.append({
+            'bass_dt': f'202501{(i % 28) + 1:02d}',
+            'open': f'{price * 0.999:.2f}',
+            'high': f'{high:.2f}',
+            'low': f'{low:.2f}',
+            'clos': f'{price:.2f}',
+            'tvol': str(rng.randint(1000000, 20000000)),
+        })
+    rows.reverse()  # 최신 날짜가 index 0
+    return rows
+
+
+def _mock_volume_rank_kr(market_div: str = 'J') -> list:
+    kospi = [
+        {'mksc_shrn_iscd': '005930', 'hts_kor_isnm': '삼성전자', 'acml_vol': '15000000', 'stck_prpr': '75000', 'hts_avls': '4485000', 'iscd_stat_cls_code': '00'},
+        {'mksc_shrn_iscd': '000660', 'hts_kor_isnm': 'SK하이닉스', 'acml_vol': '8000000', 'stck_prpr': '145000', 'hts_avls': '1050000', 'iscd_stat_cls_code': '00'},
+        {'mksc_shrn_iscd': '005380', 'hts_kor_isnm': '현대차', 'acml_vol': '2500000', 'stck_prpr': '210000', 'hts_avls': '450000', 'iscd_stat_cls_code': '00'},
+        {'mksc_shrn_iscd': '000270', 'hts_kor_isnm': '기아', 'acml_vol': '3500000', 'stck_prpr': '92000', 'hts_avls': '370000', 'iscd_stat_cls_code': '00'},
+        {'mksc_shrn_iscd': '051910', 'hts_kor_isnm': 'LG화학', 'acml_vol': '1500000', 'stck_prpr': '330000', 'hts_avls': '310000', 'iscd_stat_cls_code': '00'},
+        {'mksc_shrn_iscd': '006400', 'hts_kor_isnm': '삼성SDI', 'acml_vol': '1200000', 'stck_prpr': '290000', 'hts_avls': '290000', 'iscd_stat_cls_code': '00'},
+        {'mksc_shrn_iscd': '207940', 'hts_kor_isnm': '삼성바이오로직스', 'acml_vol': '800000', 'stck_prpr': '780000', 'hts_avls': '500000', 'iscd_stat_cls_code': '00'},
+        {'mksc_shrn_iscd': '105560', 'hts_kor_isnm': 'KB금융', 'acml_vol': '1200000', 'stck_prpr': '65000', 'hts_avls': '250000', 'iscd_stat_cls_code': '00'},
+        {'mksc_shrn_iscd': '055550', 'hts_kor_isnm': '신한지주', 'acml_vol': '1000000', 'stck_prpr': '48000', 'hts_avls': '230000', 'iscd_stat_cls_code': '00'},
+        {'mksc_shrn_iscd': '066570', 'hts_kor_isnm': 'LG전자', 'acml_vol': '900000', 'stck_prpr': '95000', 'hts_avls': '200000', 'iscd_stat_cls_code': '00'},
+        {'mksc_shrn_iscd': '012330', 'hts_kor_isnm': '현대모비스', 'acml_vol': '700000', 'stck_prpr': '230000', 'hts_avls': '280000', 'iscd_stat_cls_code': '00'},
+        {'mksc_shrn_iscd': '028260', 'hts_kor_isnm': '삼성물산', 'acml_vol': '600000', 'stck_prpr': '165000', 'hts_avls': '300000', 'iscd_stat_cls_code': '00'},
+        {'mksc_shrn_iscd': '068270', 'hts_kor_isnm': '셀트리온', 'acml_vol': '1800000', 'stck_prpr': '175000', 'hts_avls': '200000', 'iscd_stat_cls_code': '00'},
+        {'mksc_shrn_iscd': '035720', 'hts_kor_isnm': '카카오', 'acml_vol': '3000000', 'stck_prpr': '42000', 'hts_avls': '180000', 'iscd_stat_cls_code': '00'},
+        {'mksc_shrn_iscd': '035420', 'hts_kor_isnm': 'NAVER', 'acml_vol': '2000000', 'stck_prpr': '180000', 'hts_avls': '280000', 'iscd_stat_cls_code': '00'},
+    ]
+    kosdaq = [
+        {'mksc_shrn_iscd': '247540', 'hts_kor_isnm': '에코프로비엠', 'acml_vol': '2000000', 'stck_prpr': '180000', 'hts_avls': '120000', 'iscd_stat_cls_code': '00'},
+        {'mksc_shrn_iscd': '086520', 'hts_kor_isnm': '에코프로', 'acml_vol': '1500000', 'stck_prpr': '90000', 'hts_avls': '80000', 'iscd_stat_cls_code': '00'},
+        {'mksc_shrn_iscd': '091990', 'hts_kor_isnm': '셀트리온헬스케어', 'acml_vol': '1000000', 'stck_prpr': '70000', 'hts_avls': '90000', 'iscd_stat_cls_code': '00'},
+        {'mksc_shrn_iscd': '196170', 'hts_kor_isnm': '알테오젠', 'acml_vol': '800000', 'stck_prpr': '220000', 'hts_avls': '75000', 'iscd_stat_cls_code': '00'},
+        {'mksc_shrn_iscd': '141080', 'hts_kor_isnm': '레고켐바이오', 'acml_vol': '600000', 'stck_prpr': '95000', 'hts_avls': '55000', 'iscd_stat_cls_code': '00'},
+    ]
+    return kospi if market_div == 'J' else kosdaq

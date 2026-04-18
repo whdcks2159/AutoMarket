@@ -21,14 +21,16 @@ class Week52HighStrategy(BaseStrategy):
 
         if market == 'KR':
             holdings = self._get_holdings_kr()
-            for symbol in self.KR_SYMBOLS:
+            symbols = self.get_scan_symbols_kr(self.KR_SYMBOLS)
+            for symbol in symbols:
                 try:
                     self._process_kr(symbol, holdings)
                 except Exception as e:
                     self.log_signal(f"{symbol} 오류: {e}", event_type='ERROR')
         else:
             holdings = self._get_holdings_us()
-            for symbol, excd in self.US_SYMBOLS:
+            symbol_pairs = self.get_scan_symbols_us(self.US_SYMBOLS)
+            for symbol, excd in symbol_pairs:
                 try:
                     self._process_us(symbol, excd, holdings)
                 except Exception as e:
@@ -47,7 +49,12 @@ class Week52HighStrategy(BaseStrategy):
         held_qty = holdings.get(symbol, 0)
 
         if held_qty == 0 and current > week52_high * 0.999:
-            qty = self._calc_qty(current, 'KR')
+            if not self.check_daily_buy_limit():
+                self.log_signal(f"일일 매수 한도 초과 — {symbol} 스킵")
+                return
+            if self.already_bought_today(symbol):
+                return
+            qty = self.screener_qty(current, 0.3) or self._calc_qty(current, 'KR')
             if qty > 0:
                 self.log_signal(f"52주 신고가 돌파 매수 {symbol} | 현재={current} 신고가={week52_high:.0f}")
                 try:
@@ -86,7 +93,12 @@ class Week52HighStrategy(BaseStrategy):
         held_qty = holdings.get(symbol, 0)
 
         if held_qty == 0 and current > week52_high * 0.999:
-            qty = self._calc_qty(current, 'US')
+            if not self.check_daily_buy_limit():
+                self.log_signal(f"일일 매수 한도 초과 — {symbol} 스킵")
+                return
+            if self.already_bought_today(symbol):
+                return
+            qty = self.screener_qty(current, 0.3, 'US') or self._calc_qty(current, 'US')
             if qty > 0:
                 self.log_signal(f"52주 신고가 돌파 매수 {symbol} | ${current} 신고가=${week52_high:.2f}")
                 try:

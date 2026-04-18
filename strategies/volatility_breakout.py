@@ -43,8 +43,9 @@ class VolatilityBreakoutStrategy(BaseStrategy):
     def _run_kr(self):
         k = self._get_k('KR')
         holdings = self._get_holdings_kr()
+        symbols = self.get_scan_symbols_kr(self.KR_SYMBOLS)
 
-        for symbol in self.KR_SYMBOLS:
+        for symbol in symbols:
             try:
                 ohlcv = self.kis.get_daily_ohlcv_kr(symbol, period=5)
                 if len(ohlcv) < 2:
@@ -70,7 +71,12 @@ class VolatilityBreakoutStrategy(BaseStrategy):
 
                 held_qty = holdings.get(symbol, 0)
                 if held_qty == 0 and current >= target_price:
-                    qty = self._calc_qty(current, 'KR')
+                    if not self.check_daily_buy_limit():
+                        self.log_signal(f"일일 매수 한도 초과 — {symbol} 스킵")
+                        break
+                    if self.already_bought_today(symbol):
+                        continue
+                    qty = self.screener_qty(current, 0.5) or self._calc_qty(current, 'KR')
                     if qty > 0:
                         self.log_signal(f"변동성 돌파 매수 {symbol} | {current} >= 목표 {target_price:.0f} K={k}")
                         result = self.kis.order_with_retry(symbol, 'BUY', qty, current, 'KR')
@@ -83,7 +89,8 @@ class VolatilityBreakoutStrategy(BaseStrategy):
         k = self._get_k('US')
         holdings = self._get_holdings_us()
 
-        for symbol, excd in self.US_SYMBOLS:
+        symbol_pairs = self.get_scan_symbols_us(self.US_SYMBOLS)
+        for symbol, excd in symbol_pairs:
             try:
                 ohlcv = self.kis.get_daily_ohlcv_us(symbol, excd, period=5)
                 if len(ohlcv) < 2:
@@ -107,7 +114,12 @@ class VolatilityBreakoutStrategy(BaseStrategy):
 
                 held_qty = holdings.get(symbol, 0)
                 if held_qty == 0 and current >= target_price:
-                    qty = self._calc_qty(current, 'US')
+                    if not self.check_daily_buy_limit():
+                        self.log_signal(f"일일 매수 한도 초과 — {symbol} 스킵")
+                        break
+                    if self.already_bought_today(symbol):
+                        continue
+                    qty = self.screener_qty(current, 0.5, 'US') or self._calc_qty(current, 'US')
                     if qty > 0:
                         self.log_signal(f"변동성 돌파 매수 {symbol} | ${current} >= 목표 ${target_price:.2f}")
                         result = self.kis.order_with_retry(symbol, 'BUY', qty, current, 'US', excd)

@@ -17,8 +17,9 @@ class GoldenRSIStrategy(BaseStrategy):
     def run(self):
         self.log_signal("전략 실행 시작")
         holdings = self._get_holdings()
+        symbols = self.get_scan_symbols_kr(self.SYMBOLS)
 
-        for symbol in self.SYMBOLS:
+        for symbol in symbols:
             try:
                 self._process(symbol, holdings)
             except Exception as e:
@@ -52,7 +53,12 @@ class GoldenRSIStrategy(BaseStrategy):
         if held_qty == 0:
             should_buy = (golden_cross and rsi < 70) or (rsi < 30 and golden_cross)
             if should_buy:
-                qty = self._calc_qty(current_price)
+                if not self.check_daily_buy_limit():
+                    self.log_signal(f"일일 매수 한도 초과 — {symbol} 매수 스킵")
+                    return
+                if self.already_bought_today(symbol):
+                    return
+                qty = self.screener_qty(current_price) or self._calc_qty(current_price)
                 if qty > 0:
                     self.log_signal(f"매수 시그널 {symbol} | 가격={current_price} RSI={rsi:.1f} SMA5={sma5:.0f} SMA20={sma20:.0f}")
                     try:

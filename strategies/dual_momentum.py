@@ -20,8 +20,9 @@ class DualMomentumStrategy(BaseStrategy):
     def run(self):
         self.log_signal("듀얼 모멘텀 리밸런싱 시작")
         momentum_scores = {}
+        symbol_pairs = self.get_scan_symbols_us(self.SYMBOLS)
 
-        for symbol, excd in self.SYMBOLS:
+        for symbol, excd in symbol_pairs:
             try:
                 score = self._calc_momentum(symbol, excd)
                 if score is not None:

@@ -58,6 +58,78 @@ class BaseStrategy(ABC):
         db.session.commit()
         return trade
 
+    def get_scan_symbols_kr(self, default_symbols: list) -> list:
+        """스크리너 활성화 시 오늘 스캔 결과 반환, 미활성 시 기본 목록 반환."""
+        if not getattr(self.account, 'screener_enabled', False):
+            return default_symbols
+        from models import ScanResult
+        from datetime import date, datetime
+        today_start = datetime.combine(date.today(), datetime.min.time())
+        results = (ScanResult.query
+                   .filter_by(account_id=self.account.id, strategy=self.name, signal='BUY')
+                   .filter(ScanResult.scanned_at >= today_start)
+                   .order_by(ScanResult.scanned_at.desc())
+                   .limit(self.account.screener_max_symbols)
+                   .all())
+        return [r.ticker for r in results] if results else default_symbols
+
+    def get_scan_symbols_us(self, default_symbols: list) -> list:
+        """미국주 스크리너 심볼 반환 (ticker, exchange) 튜플 목록."""
+        if not getattr(self.account, 'screener_enabled', False):
+            return default_symbols
+        from models import ScanResult
+        from datetime import date, datetime
+        today_start = datetime.combine(date.today(), datetime.min.time())
+        results = (ScanResult.query
+                   .filter_by(account_id=self.account.id, strategy=self.name, signal='BUY')
+                   .filter(ScanResult.scanned_at >= today_start)
+                   .order_by(ScanResult.scanned_at.desc())
+                   .limit(self.account.screener_max_symbols)
+                   .all())
+        if not results:
+            return default_symbols
+        # ticker 형식: "AAPL|NAS"
+        pairs = []
+        for r in results:
+            parts = r.ticker.split('|')
+            if len(parts) == 2:
+                pairs.append((parts[0], parts[1]))
+        return pairs if pairs else default_symbols
+
+    def check_daily_buy_limit(self) -> bool:
+        """오늘 일일 매수 한도 초과 여부 확인. True=매수 가능."""
+        if not getattr(self.account, 'screener_enabled', False):
+            return True
+        from models import Trade
+        from datetime import date, datetime
+        today_start = datetime.combine(date.today(), datetime.min.time())
+        count = (Trade.query
+                 .filter_by(account_id=self.account.id, side='BUY', status='FILLED')
+                 .filter(Trade.executed_at >= today_start)
+                 .count())
+        return count < self.account.screener_daily_buy_limit
+
+    def already_bought_today(self, symbol: str) -> bool:
+        """오늘 이미 해당 종목을 매수했는지 확인 (중복 방지)."""
+        if not getattr(self.account, 'screener_enabled', False):
+            return False
+        from models import Trade
+        from datetime import date, datetime
+        today_start = datetime.combine(date.today(), datetime.min.time())
+        return (Trade.query
+                .filter_by(account_id=self.account.id, symbol=symbol, side='BUY')
+                .filter(Trade.executed_at >= today_start)
+                .count()) > 0
+
+    def screener_qty(self, price: float, ratio: float = 1.0, market: str = 'KR') -> int:
+        """스크리너 활성화 시 per_symbol_limit 적용, 미활성 시 None 반환."""
+        if not getattr(self.account, 'screener_enabled', False):
+            return None
+        limit = self.account.screener_per_symbol_limit * ratio
+        if market == 'US':
+            limit = limit / 1350
+        return max(0, int(limit / price))
+
     @staticmethod
     def calc_rsi(closes: list, period: int = 14) -> float:
         if len(closes) < period + 1:
