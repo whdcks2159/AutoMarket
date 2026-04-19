@@ -1,256 +1,175 @@
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>투자 전략 가이드 — AutoMarket</title>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
-  <link rel="preconnect" href="https://fonts.googleapis.com"/>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-  <style>
-    :root {
-      --bg: #0f1117;
-      --surface: #1a1d27;
-      --surface2: #22263a;
-      --border: #2e3350;
-      --text: #e2e8f0;
-      --text-muted: #94a3b8;
-      --radius: 14px;
+{% extends 'base.html' %}
+{% block title %}투자 전략 가이드 — AutoMarket{% endblock %}
 
-      --blue: #4f7cff;
-      --blue-dim: rgba(79,124,255,.12);
-      --blue-border: rgba(79,124,255,.35);
+{% block head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --blue: #4f7cff;
+    --blue-dim: rgba(79,124,255,.12);
+    --blue-border: rgba(79,124,255,.35);
+    --green: #22c55e;
+    --green-dim: rgba(34,197,94,.12);
+    --green-border: rgba(34,197,94,.35);
+    --orange: #f97316;
+    --orange-dim: rgba(249,115,22,.12);
+    --orange-border: rgba(249,115,22,.35);
+    --purple: #a855f7;
+    --purple-dim: rgba(168,85,247,.12);
+    --purple-border: rgba(168,85,247,.35);
+  }
 
-      --green: #22c55e;
-      --green-dim: rgba(34,197,94,.12);
-      --green-border: rgba(34,197,94,.35);
+  /* ── HERO ── */
+  .hero {
+    text-align: center; padding: 48px 24px 36px;
+    background: radial-gradient(ellipse 80% 50% at 50% -10%, rgba(79,124,255,.15) 0%, transparent 70%);
+  }
+  .hero-eyebrow {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: var(--blue-dim); border: 1px solid var(--blue-border);
+    color: var(--blue); padding: 5px 14px; border-radius: 20px;
+    font-size: .8rem; font-weight: 600; margin-bottom: 20px;
+  }
+  .hero h1 { font-size: clamp(1.6rem, 4vw, 2.5rem); font-weight: 800; letter-spacing: -.02em; }
+  .hero h1 em { font-style: normal; color: var(--blue); }
+  .hero p { color: var(--text-muted); margin-top: 10px; font-size: 1rem; }
 
-      --orange: #f97316;
-      --orange-dim: rgba(249,115,22,.12);
-      --orange-border: rgba(249,115,22,.35);
+  /* ── SECTIONS ── */
+  .str-section { max-width: 1020px; margin: 0 auto; padding: 0 0 52px; }
+  .section-title {
+    font-size: 1.2rem; font-weight: 700; margin-bottom: 18px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .section-title::before { content: ''; width: 4px; height: 18px; border-radius: 2px; background: var(--blue); flex-shrink: 0; }
 
-      --purple: #a855f7;
-      --purple-dim: rgba(168,85,247,.12);
-      --purple-border: rgba(168,85,247,.35);
-    }
+  /* ── COMPARE TABLE ── */
+  .table-wrap { overflow-x: auto; border-radius: var(--radius); border: 1px solid var(--border); }
+  .pill {
+    display: inline-block; padding: 2px 10px; border-radius: 20px; font-size: .76rem; font-weight: 600;
+  }
+  .pill-blue { background: var(--blue-dim); color: var(--blue); }
+  .pill-green { background: var(--green-dim); color: var(--green); }
+  .pill-orange { background: var(--orange-dim); color: var(--orange); }
+  .pill-purple { background: var(--purple-dim); color: var(--purple); }
+  .pill-low { background: rgba(34,197,94,.15); color: #22c55e; }
+  .pill-mid { background: rgba(245,158,11,.15); color: #f59e0b; }
+  .pill-high { background: rgba(239,68,68,.15); color: #ef4444; }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
-    a { color: inherit; text-decoration: none; }
+  /* ── STRATEGY CARDS ── */
+  .strategies-grid { display: grid; gap: 24px; }
+  .s-card {
+    border-radius: var(--radius); border: 1px solid var(--border);
+    background: var(--surface); overflow: hidden;
+    transition: transform .25s, box-shadow .25s;
+  }
+  .s-card:hover { transform: translateY(-3px); }
+  .s-card.blue  { border-color: var(--blue-border); }
+  .s-card.blue:hover  { box-shadow: 0 8px 36px rgba(79,124,255,.2); }
+  .s-card.green { border-color: var(--green-border); }
+  .s-card.green:hover { box-shadow: 0 8px 36px rgba(34,197,94,.2); }
+  .s-card.orange { border-color: var(--orange-border); }
+  .s-card.orange:hover { box-shadow: 0 8px 36px rgba(249,115,22,.2); }
+  .s-card.purple { border-color: var(--purple-border); }
+  .s-card.purple:hover { box-shadow: 0 8px 36px rgba(168,85,247,.2); }
 
-    /* ── NAV ── */
-    .nav {
-      position: sticky; top: 0; z-index: 100;
-      background: rgba(15,17,23,.85); backdrop-filter: blur(12px);
-      border-bottom: 1px solid var(--border);
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 0 32px; height: 60px;
-    }
-    .nav-logo { font-size: 1.2rem; font-weight: 800; color: var(--blue); }
-    .nav-logo span { color: var(--text); }
-    .nav-links { display: flex; gap: 8px; }
-    .btn {
-      display: inline-flex; align-items: center; gap: 8px;
-      padding: 9px 20px; border-radius: 8px; font-size: .875rem;
-      font-weight: 600; cursor: pointer; border: none; transition: all .2s; font-family: inherit;
-    }
-    .btn-outline { background: transparent; color: var(--text); border: 1px solid var(--border); }
-    .btn-outline:hover { background: var(--surface2); }
-    .btn-primary { background: var(--blue); color: #fff; }
-    .btn-primary:hover { background: #3d69e8; transform: translateY(-1px); box-shadow: 0 4px 16px rgba(79,124,255,.4); }
+  .s-header { padding: 22px 26px 18px; display: flex; align-items: flex-start; gap: 16px; flex-wrap: wrap; }
+  .s-header-left { flex: 1; }
+  .s-num { font-size: .72rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; margin-bottom: 5px; opacity: .7; }
+  .s-title { font-size: 1.3rem; font-weight: 800; }
+  .s-tagline { color: var(--text-muted); margin-top: 5px; font-size: .875rem; }
+  .s-badges { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+  .badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 10px; border-radius: 20px; font-size: .75rem; font-weight: 500;
+    border: 1px solid transparent;
+  }
+  .badge-blue   { background: var(--blue-dim);   color: var(--blue);   border-color: var(--blue-border); }
+  .badge-green  { background: var(--green-dim);  color: var(--green);  border-color: var(--green-border); }
+  .badge-orange { background: var(--orange-dim); color: var(--orange); border-color: var(--orange-border); }
+  .badge-purple { background: var(--purple-dim); color: var(--purple); border-color: var(--purple-border); }
+  .badge-star   { background: rgba(245,158,11,.15); color: #f59e0b; border-color: rgba(245,158,11,.3); }
 
-    /* ── HERO ── */
-    .hero {
-      text-align: center; padding: 72px 24px 48px;
-      background: radial-gradient(ellipse 80% 50% at 50% -10%, rgba(79,124,255,.15) 0%, transparent 70%);
-    }
-    .hero-eyebrow {
-      display: inline-flex; align-items: center; gap: 6px;
-      background: var(--blue-dim); border: 1px solid var(--blue-border);
-      color: var(--blue); padding: 5px 14px; border-radius: 20px;
-      font-size: .8rem; font-weight: 600; margin-bottom: 20px;
-    }
-    .hero h1 { font-size: clamp(2rem, 5vw, 3rem); font-weight: 800; letter-spacing: -.02em; }
-    .hero h1 em { font-style: normal; color: var(--blue); }
-    .hero p { color: var(--text-muted); margin-top: 12px; font-size: 1.05rem; }
+  .s-chart-wrap { height: 120px; padding: 0 26px; }
 
-    /* ── COMPARE TABLE ── */
-    .section { max-width: 1100px; margin: 0 auto; padding: 0 24px 64px; }
-    .section-title {
-      font-size: 1.35rem; font-weight: 700; margin-bottom: 20px;
-      display: flex; align-items: center; gap: 10px;
-    }
-    .section-title::before { content: ''; width: 4px; height: 20px; border-radius: 2px; background: var(--blue); }
-    .table-wrap { overflow-x: auto; border-radius: var(--radius); border: 1px solid var(--border); }
-    table { width: 100%; border-collapse: collapse; font-size: .875rem; }
-    th { padding: 12px 16px; text-align: left; color: var(--text-muted); font-weight: 500; background: var(--surface); border-bottom: 1px solid var(--border); }
-    td { padding: 13px 16px; border-bottom: 1px solid var(--border); background: var(--surface); }
-    tr:last-child td { border-bottom: none; }
-    tr:hover td { background: var(--surface2); }
-    .pill {
-      display: inline-block; padding: 2px 10px; border-radius: 20px; font-size: .76rem; font-weight: 600;
-    }
-    .pill-blue { background: var(--blue-dim); color: var(--blue); }
-    .pill-green { background: var(--green-dim); color: var(--green); }
-    .pill-orange { background: var(--orange-dim); color: var(--orange); }
-    .pill-purple { background: var(--purple-dim); color: var(--purple); }
-    .pill-low { background: rgba(34,197,94,.15); color: #22c55e; }
-    .pill-mid { background: rgba(245,158,11,.15); color: #f59e0b; }
-    .pill-high { background: rgba(239,68,68,.15); color: #ef4444; }
+  .s-body { padding: 18px 26px 26px; display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  @media (max-width: 700px) { .s-body { grid-template-columns: 1fr; } }
 
-    /* ── STRATEGY CARDS ── */
-    .strategies-grid { display: grid; gap: 28px; }
+  .s-section-label {
+    font-size: .68rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+    color: var(--text-muted); margin-bottom: 8px;
+  }
+  .s-rule-list { list-style: none; display: flex; flex-direction: column; gap: 6px; }
+  .s-rule-list li { display: flex; align-items: flex-start; gap: 8px; font-size: .84rem; color: var(--text-muted); }
+  .s-rule-list li .icon { font-size: .75rem; margin-top: 2px; flex-shrink: 0; }
+  .icon-buy  { color: var(--green); }
+  .icon-sell { color: #ef4444; }
 
-    .s-card {
-      border-radius: var(--radius); border: 1px solid var(--border);
-      background: var(--surface); overflow: hidden;
-      transition: transform .25s, box-shadow .25s;
-    }
-    .s-card:hover { transform: translateY(-4px); }
+  .s-pros-cons { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; grid-column: 1 / -1; }
+  @media (max-width: 700px) { .s-pros-cons { grid-template-columns: 1fr; } }
+  .pros-box, .cons-box { border-radius: 10px; padding: 13px; }
+  .pros-box { background: rgba(34,197,94,.07); border: 1px solid rgba(34,197,94,.2); }
+  .cons-box { background: rgba(239,68,68,.07);  border: 1px solid rgba(239,68,68,.2); }
+  .pros-box .s-section-label { color: #22c55e; }
+  .cons-box .s-section-label { color: #ef4444; }
+  .check-list { list-style: none; display: flex; flex-direction: column; gap: 5px; }
+  .check-list li { display: flex; gap: 8px; font-size: .81rem; color: var(--text-muted); }
 
-    .s-card.blue  { border-color: var(--blue-border); box-shadow: 0 0 0 0 rgba(79,124,255,0); }
-    .s-card.blue:hover  { box-shadow: 0 8px 40px rgba(79,124,255,.2); }
-    .s-card.green { border-color: var(--green-border); }
-    .s-card.green:hover { box-shadow: 0 8px 40px rgba(34,197,94,.2); }
-    .s-card.orange { border-color: var(--orange-border); }
-    .s-card.orange:hover { box-shadow: 0 8px 40px rgba(249,115,22,.2); }
-    .s-card.purple { border-color: var(--purple-border); }
-    .s-card.purple:hover { box-shadow: 0 8px 40px rgba(168,85,247,.2); }
+  .s-research {
+    grid-column: 1 / -1; background: var(--surface2);
+    border-radius: 10px; padding: 14px; border: 1px solid var(--border);
+  }
+  .research-item { display: flex; gap: 12px; font-size: .82rem; margin-bottom: 8px; }
+  .research-item:last-child { margin-bottom: 0; }
+  .research-icon { font-size: .9rem; margin-top: 1px; flex-shrink: 0; }
 
-    .s-header {
-      padding: 24px 28px 20px;
-      display: flex; align-items: flex-start; justify-content: space-between; gap: 16px;
-      flex-wrap: wrap;
-    }
-    .s-header-left { flex: 1; }
-    .s-num { font-size: .75rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; margin-bottom: 6px; opacity: .7; }
-    .s-title { font-size: 1.4rem; font-weight: 800; }
-    .s-tagline { color: var(--text-muted); margin-top: 6px; font-size: .9rem; }
-    .s-badges { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
-    .badge {
-      display: inline-flex; align-items: center; gap: 4px;
-      padding: 3px 10px; border-radius: 20px; font-size: .75rem; font-weight: 500;
-      border: 1px solid transparent;
-    }
-    .badge-blue { background: var(--blue-dim); color: var(--blue); border-color: var(--blue-border); }
-    .badge-green { background: var(--green-dim); color: var(--green); border-color: var(--green-border); }
-    .badge-orange { background: var(--orange-dim); color: var(--orange); border-color: var(--orange-border); }
-    .badge-purple { background: var(--purple-dim); color: var(--purple); border-color: var(--purple-border); }
-    .badge-star { background: rgba(245,158,11,.15); color: #f59e0b; border-color: rgba(245,158,11,.3); }
+  .s-scenario {
+    grid-column: 1 / -1; border-radius: 10px; padding: 14px;
+    background: rgba(79,124,255,.06); border: 1px solid rgba(79,124,255,.15);
+  }
+  .s-scenario.green  { background: rgba(34,197,94,.06);  border-color: rgba(34,197,94,.15); }
+  .s-scenario.orange { background: rgba(249,115,22,.06); border-color: rgba(249,115,22,.15); }
+  .s-scenario.purple { background: rgba(168,85,247,.06); border-color: rgba(168,85,247,.15); }
 
-    .s-chart-wrap { height: 130px; padding: 0 28px; }
+  .s-stats { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+  @media (max-width: 600px) { .s-stats { grid-template-columns: repeat(2, 1fr); } }
+  .stat-box { background: var(--surface2); border-radius: 10px; padding: 13px; border: 1px solid var(--border); }
+  .stat-val { font-size: 1.3rem; font-weight: 800; }
+  .stat-lbl { font-size: .7rem; color: var(--text-muted); margin-top: 2px; }
 
-    .s-body { padding: 20px 28px 28px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-    @media (max-width: 700px) { .s-body { grid-template-columns: 1fr; } }
+  .s-target { grid-column: 1 / -1; }
+  .target-box {
+    display: flex; gap: 10px; align-items: center;
+    background: var(--surface2); border-radius: 10px; padding: 13px 16px;
+    border: 1px solid var(--border);
+  }
 
-    .s-section-label {
-      font-size: .7rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
-      color: var(--text-muted); margin-bottom: 8px;
-    }
-    .s-rule-list { list-style: none; display: flex; flex-direction: column; gap: 6px; }
-    .s-rule-list li {
-      display: flex; align-items: flex-start; gap: 8px; font-size: .85rem; color: var(--text-muted);
-    }
-    .s-rule-list li .icon { font-size: .75rem; margin-top: 2px; flex-shrink: 0; }
-    .icon-buy { color: var(--green); }
-    .icon-sell { color: #ef4444; }
-    .icon-neutral { color: var(--text-muted); }
+  /* ── GUIDE ── */
+  .guide-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  @media (max-width: 768px) { .guide-grid { grid-template-columns: 1fr; } }
+  .guide-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; }
+  .guide-type { font-size: .78rem; font-weight: 700; color: var(--text-muted); margin-bottom: 8px; text-transform: uppercase; letter-spacing: .06em; }
+  .guide-accounts { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
 
-    .s-pros-cons { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; grid-column: 1 / -1; }
-    @media (max-width: 700px) { .s-pros-cons { grid-template-columns: 1fr; } }
-    .pros-box, .cons-box {
-      border-radius: 10px; padding: 14px;
-    }
-    .pros-box { background: rgba(34,197,94,.07); border: 1px solid rgba(34,197,94,.2); }
-    .cons-box { background: rgba(239,68,68,.07); border: 1px solid rgba(239,68,68,.2); }
-    .pros-box .s-section-label { color: #22c55e; }
-    .cons-box .s-section-label { color: #ef4444; }
-    .pros-box li::before { content: '✓'; color: #22c55e; font-weight: 700; }
-    .cons-box li::before { content: '✗'; color: #ef4444; font-weight: 700; }
-    .check-list { list-style: none; display: flex; flex-direction: column; gap: 5px; }
-    .check-list li { display: flex; gap: 8px; font-size: .82rem; color: var(--text-muted); }
+  .disclaimer {
+    background: rgba(239,68,68,.07); border: 1px solid rgba(239,68,68,.2);
+    border-radius: var(--radius); padding: 18px 22px;
+  }
+  .disclaimer ul { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+  .disclaimer li { display: flex; gap: 10px; font-size: .875rem; color: var(--text-muted); }
+  .disclaimer li i { color: #ef4444; margin-top: 2px; flex-shrink: 0; }
 
-    .s-research {
-      grid-column: 1 / -1;
-      background: var(--surface2); border-radius: 10px; padding: 16px;
-      border: 1px solid var(--border);
-    }
-    .s-research .s-section-label { margin-bottom: 10px; }
-    .research-item { display: flex; gap: 12px; font-size: .83rem; margin-bottom: 8px; }
-    .research-item:last-child { margin-bottom: 0; }
-    .research-icon { font-size: .9rem; margin-top: 1px; flex-shrink: 0; }
+  .cta-bar {
+    text-align: center; padding: 48px 24px 60px;
+    background: radial-gradient(ellipse 60% 60% at 50% 100%, rgba(79,124,255,.1) 0%, transparent 70%);
+  }
+  .cta-bar h2 { font-size: 1.6rem; font-weight: 800; margin-bottom: 8px; }
+  .cta-bar p { color: var(--text-muted); margin-bottom: 24px; }
+  .cta-buttons { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+  .btn-lg { padding: 13px 28px; font-size: .95rem; border-radius: 10px; }
+</style>
+{% endblock %}
 
-    .s-scenario {
-      grid-column: 1 / -1;
-      background: rgba(79,124,255,.06); border-radius: 10px; padding: 16px;
-      border: 1px solid rgba(79,124,255,.15);
-    }
-    .s-scenario.green { background: rgba(34,197,94,.06); border-color: rgba(34,197,94,.15); }
-    .s-scenario.orange { background: rgba(249,115,22,.06); border-color: rgba(249,115,22,.15); }
-    .s-scenario.purple { background: rgba(168,85,247,.06); border-color: rgba(168,85,247,.15); }
-
-    .s-stats { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
-    @media (max-width: 600px) { .s-stats { grid-template-columns: repeat(2, 1fr); } }
-    .stat-box { background: var(--surface2); border-radius: 10px; padding: 14px; border: 1px solid var(--border); }
-    .stat-val { font-size: 1.4rem; font-weight: 800; }
-    .stat-lbl { font-size: .72rem; color: var(--text-muted); margin-top: 2px; }
-
-    .s-target { grid-column: 1 / -1; }
-    .target-box {
-      display: flex; gap: 10px; align-items: center;
-      background: var(--surface2); border-radius: 10px; padding: 14px 18px;
-      border: 1px solid var(--border);
-    }
-    .target-box i { font-size: 1rem; }
-
-    /* ── GUIDE / BOTTOM ── */
-    .guide-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
-    @media (max-width: 768px) { .guide-grid { grid-template-columns: 1fr; } }
-    .guide-card {
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: var(--radius); padding: 20px;
-    }
-    .guide-type { font-size: .8rem; font-weight: 700; color: var(--text-muted); margin-bottom: 10px; text-transform: uppercase; letter-spacing: .06em; }
-    .guide-accounts { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
-
-    .disclaimer {
-      background: rgba(239,68,68,.07); border: 1px solid rgba(239,68,68,.2);
-      border-radius: var(--radius); padding: 20px 24px;
-    }
-    .disclaimer ul { list-style: none; display: flex; flex-direction: column; gap: 8px; }
-    .disclaimer li { display: flex; gap: 10px; font-size: .875rem; color: var(--text-muted); }
-    .disclaimer li i { color: #ef4444; margin-top: 2px; flex-shrink: 0; }
-
-    .cta-bar {
-      text-align: center; padding: 56px 24px 72px;
-      background: radial-gradient(ellipse 60% 60% at 50% 100%, rgba(79,124,255,.1) 0%, transparent 70%);
-    }
-    .cta-bar h2 { font-size: 1.8rem; font-weight: 800; margin-bottom: 8px; }
-    .cta-bar p { color: var(--text-muted); margin-bottom: 28px; }
-    .cta-buttons { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
-    .btn-lg { padding: 14px 32px; font-size: 1rem; border-radius: 10px; }
-
-    /* count-up numbers */
-    .count-up { display: inline-block; }
-
-    @media (max-width: 900px) {
-      .nav { padding: 0 16px; }
-      .hero { padding: 48px 16px 32px; }
-    }
-  </style>
-</head>
-<body>
-
-<!-- NAV -->
-<nav class="nav">
-  <div class="nav-logo">Auto<span>Market</span></div>
-  <div class="nav-links">
-    <a href="/login" class="btn btn-outline">로그인</a>
-    <a href="/login" class="btn btn-primary">무료로 시작</a>
-  </div>
-</nav>
-
+{% block content %}
 <!-- HERO -->
 <div class="hero">
   <div class="hero-eyebrow"><i class="fa-solid fa-flask-vial"></i> 논문 · 실증 데이터 기반</div>
@@ -259,49 +178,40 @@
 </div>
 
 <!-- COMPARE TABLE -->
-<div class="section" style="padding-top:16px;">
+<div class="str-section" style="padding-top:8px;">
   <div class="section-title">전략 한눈에 비교</div>
   <div class="table-wrap">
     <table>
       <thead>
         <tr>
-          <th>전략</th>
-          <th>스타일</th>
-          <th>매매주기</th>
-          <th>기대수익</th>
-          <th>리스크</th>
-          <th>난이도</th>
+          <th>전략</th><th>스타일</th><th>매매주기</th><th>기대수익</th><th>리스크</th><th>난이도</th>
         </tr>
       </thead>
       <tbody>
         <tr>
           <td><span class="pill pill-blue">골든크로스+RSI</span></td>
-          <td>안정형</td>
-          <td>매일</td>
+          <td>안정형</td><td>매일</td>
           <td><span class="pill pill-low">낮음</span></td>
           <td><span class="pill pill-low">낮음</span></td>
           <td>쉬움</td>
         </tr>
         <tr>
           <td><span class="pill pill-green">듀얼 모멘텀</span></td>
-          <td>중립형</td>
-          <td>매월</td>
+          <td>중립형</td><td>매월</td>
           <td><span class="pill pill-high">높음</span></td>
           <td><span class="pill pill-low">낮음</span></td>
           <td>보통</td>
         </tr>
         <tr>
           <td><span class="pill pill-orange">52주 신고가</span></td>
-          <td>공격형</td>
-          <td>매일</td>
+          <td>공격형</td><td>매일</td>
           <td><span class="pill pill-high">높음</span></td>
           <td><span class="pill pill-mid">중간</span></td>
           <td>보통</td>
         </tr>
         <tr>
           <td><span class="pill pill-purple">변동성 돌파</span></td>
-          <td>단타형</td>
-          <td>당일</td>
+          <td>단타형</td><td>당일</td>
           <td><span class="pill pill-mid">중간</span></td>
           <td><span class="pill pill-high">높음</span></td>
           <td>어려움</td>
@@ -312,11 +222,11 @@
 </div>
 
 <!-- STRATEGIES -->
-<div class="section">
+<div class="str-section">
   <div class="section-title">전략 상세 분석</div>
   <div class="strategies-grid">
 
-    <!-- ── 전략 1: 골든크로스 + RSI ── -->
+    <!-- 전략 1: 골든크로스 + RSI -->
     <div class="s-card blue">
       <div class="s-header">
         <div class="s-header-left">
@@ -330,9 +240,7 @@
           </div>
         </div>
       </div>
-      <div class="s-chart-wrap">
-        <canvas id="chart1"></canvas>
-      </div>
+      <div class="s-chart-wrap"><canvas id="chart1"></canvas></div>
       <div class="s-body">
         <div>
           <div class="s-section-label">작동 원리</div>
@@ -346,9 +254,9 @@
         <div>
           <div class="s-section-label">매매 예시</div>
           <div class="s-scenario">
-            <p style="font-size:.83rem;color:var(--text-muted);line-height:1.7">
-              <strong style="color:var(--text)">📈 매수:</strong> 삼성전자 5일선(7만원)이 20일선(6.8만원) 돌파 → 매수 신호 발생<br>
-              <strong style="color:var(--text)">📉 매도:</strong> RSI가 75로 과매수 구간 진입 → 매도 신호 발생
+            <p style="font-size:.82rem;color:var(--text-muted);line-height:1.7">
+              <strong style="color:var(--text)">📈 매수:</strong> 삼성전자 5일선(7만원)이 20일선(6.8만원) 돌파 → 매수 신호<br>
+              <strong style="color:var(--text)">📉 매도:</strong> RSI가 75로 과매수 구간 진입 → 매도 신호
             </p>
           </div>
         </div>
@@ -390,7 +298,7 @@
       </div>
     </div>
 
-    <!-- ── 전략 2: 듀얼 모멘텀 ── -->
+    <!-- 전략 2: 듀얼 모멘텀 -->
     <div class="s-card green">
       <div class="s-header">
         <div class="s-header-left">
@@ -405,15 +313,13 @@
           </div>
         </div>
       </div>
-      <div class="s-chart-wrap">
-        <canvas id="chart2"></canvas>
-      </div>
+      <div class="s-chart-wrap"><canvas id="chart2"></canvas></div>
       <div class="s-body">
         <div>
           <div class="s-section-label">작동 원리</div>
           <ul class="s-rule-list">
             <li><i class="fa-solid fa-ranking-star icon" style="color:var(--green)"></i><span><strong>상대 모멘텀:</strong> 등록 종목 중 90일 수익률 1위 종목 선택</span></li>
-            <li><i class="fa-solid fa-shield icon" style="color:var(--green)"></i><span><strong>절대 모멘텀:</strong> 해당 종목 수익률이 무위험 수익률(월 0.4%) 초과 시만 매수</span></li>
+            <li><i class="fa-solid fa-shield icon" style="color:var(--green)"></i><span><strong>절대 모멘텀:</strong> 수익률이 무위험 수익률(월 0.4%) 초과 시만 매수</span></li>
             <li><i class="fa-solid fa-circle-up icon icon-buy"></i><span>두 조건 모두 충족 → 매수</span></li>
             <li><i class="fa-solid fa-piggy-bank icon" style="color:var(--text-muted)"></i><span>조건 미충족 → 현금 보유 (하락장 자동 회피)</span></li>
             <li><i class="fa-solid fa-rotate icon" style="color:var(--green)"></i><span>매월 첫 거래일 자동 리밸런싱</span></li>
@@ -422,9 +328,9 @@
         <div>
           <div class="s-section-label">매매 예시</div>
           <div class="s-scenario green">
-            <p style="font-size:.83rem;color:var(--text-muted);line-height:1.7">
+            <p style="font-size:.82rem;color:var(--text-muted);line-height:1.7">
               <strong style="color:var(--text)">📊 선택:</strong> AAPL(+30%), MSFT(+15%), GOOGL(-5%) 중 AAPL 선택<br>
-              <strong style="color:var(--text)">✅ 확정:</strong> AAPL 수익률 30% > 무위험 수익률 1.2% → 매수<br>
+              <strong style="color:var(--text)">✅ 확정:</strong> AAPL 30% > 무위험 수익률 1.2% → 매수<br>
               <strong style="color:var(--text)">🔄 교체:</strong> 다음 달 NVDA(+45%) 1위 → AAPL 매도 후 NVDA 매수
             </p>
           </div>
@@ -440,7 +346,7 @@
           </div>
           <div class="stat-box">
             <div class="stat-val" style="color:var(--green)">+20%</div>
-            <div class="stat-lbl">2008년 금융위기 수익률</div>
+            <div class="stat-lbl">2008년 금융위기</div>
           </div>
           <div class="stat-box">
             <div class="stat-val" style="color:var(--green)">최상위</div>
@@ -455,11 +361,11 @@
           </div>
           <div class="research-item">
             <span class="research-icon">📅</span>
-            <span style="color:var(--text-muted)">Geczy & Samonov (2015): 215년치 데이터로 모멘텀 유효성 검증</span>
+            <span style="color:var(--text-muted)">Geczy &amp; Samonov (2015): 215년치 데이터로 모멘텀 유효성 검증</span>
           </div>
           <div class="research-item">
             <span class="research-icon">🎓</span>
-            <span style="color:var(--text-muted)">Fama & French: <em>"모멘텀은 최고의 시장 이상 현상"</em></span>
+            <span style="color:var(--text-muted)">Fama &amp; French: <em>"모멘텀은 최고의 시장 이상 현상"</em></span>
           </div>
         </div>
         <div class="s-pros-cons">
@@ -477,7 +383,7 @@
             <ul class="check-list">
               <li><span>✗</span><span>빠른 시장 변화 대응 느림</span></li>
               <li><span>✗</span><span>급등락 후 빠른 반등 놓칠 수 있음</span></li>
-              <li><span>✗</span><span>2012년 이후 S&P500 단순 보유 대비 일부 기간 부진</span></li>
+              <li><span>✗</span><span>2012년 이후 일부 기간 S&amp;P500 대비 부진</span></li>
             </ul>
           </div>
         </div>
@@ -490,7 +396,7 @@
       </div>
     </div>
 
-    <!-- ── 전략 3: 52주 신고가 ── -->
+    <!-- 전략 3: 52주 신고가 -->
     <div class="s-card orange">
       <div class="s-header">
         <div class="s-header-left">
@@ -504,9 +410,7 @@
           </div>
         </div>
       </div>
-      <div class="s-chart-wrap">
-        <canvas id="chart3"></canvas>
-      </div>
+      <div class="s-chart-wrap"><canvas id="chart3"></canvas></div>
       <div class="s-body">
         <div>
           <div class="s-section-label">작동 원리</div>
@@ -519,7 +423,7 @@
         <div>
           <div class="s-section-label">매매 예시</div>
           <div class="s-scenario orange">
-            <p style="font-size:.83rem;color:var(--text-muted);line-height:1.7">
+            <p style="font-size:.82rem;color:var(--text-muted);line-height:1.7">
               <strong style="color:var(--text)">📈 매수:</strong> 삼성전자 52주 고가 8만원 → 현재가 8.1만원 돌파 → 매수<br>
               <strong style="color:var(--text)">🛑 손절:</strong> 매수 후 7.3만원(-10%) 하락 → 자동 손절<br>
               <strong style="color:var(--text)">📉 이탈:</strong> 20일선(7.8만원) 하향 이탈 시 → 추세 이탈 매도
@@ -568,7 +472,7 @@
       </div>
     </div>
 
-    <!-- ── 전략 4: 변동성 돌파 ── -->
+    <!-- 전략 4: 변동성 돌파 -->
     <div class="s-card purple">
       <div class="s-header">
         <div class="s-header-left">
@@ -582,9 +486,7 @@
           </div>
         </div>
       </div>
-      <div class="s-chart-wrap">
-        <canvas id="chart4"></canvas>
-      </div>
+      <div class="s-chart-wrap"><canvas id="chart4"></canvas></div>
       <div class="s-body">
         <div>
           <div class="s-section-label">작동 원리</div>
@@ -599,7 +501,7 @@
         <div>
           <div class="s-section-label">매매 예시</div>
           <div class="s-scenario purple">
-            <p style="font-size:.83rem;color:var(--text-muted);line-height:1.7">
+            <p style="font-size:.82rem;color:var(--text-muted);line-height:1.7">
               <strong style="color:var(--text)">📐 계산:</strong> 전일 고가 5.2만원, 저가 4.9만원 → 변동폭 3,000원<br>
               <strong style="color:var(--text)">🎯 목표가:</strong> 당일 시가 5만원 + 3,000 × 0.5 = 5만 1,500원<br>
               <strong style="color:var(--text)">✅ 매수:</strong> 현재가 5만 1,500원 돌파 → 즉시 매수<br>
@@ -629,7 +531,7 @@
           </div>
           <div class="research-item">
             <span class="research-icon">🇰🇷</span>
-            <span style="color:var(--text-muted)">국내 자동매매 시스템에서 가장 많이 채택된 전략 중 하나 — 단, 시장 국면 판단이 수익률 핵심</span>
+            <span style="color:var(--text-muted)">국내 자동매매 시스템에서 가장 많이 채택된 전략 중 하나 — 시장 국면 판단이 수익률 핵심</span>
           </div>
         </div>
         <div class="s-pros-cons">
@@ -659,19 +561,16 @@
       </div>
     </div>
 
-  </div><!-- end strategies-grid -->
+  </div>
 </div>
 
 <!-- SELECTION GUIDE -->
-<div class="section">
-  <div class="section-title" style="--blue:#f59e0b">
-    <span style="--before-color:#f59e0b">전략 선택 가이드</span>
-  </div>
+<div class="str-section">
   <div class="section-title">전략 선택 가이드</div>
   <div class="guide-grid">
     <div class="guide-card">
       <div class="guide-type">안정추구형</div>
-      <p style="font-size:.83rem;color:var(--text-muted);margin-bottom:12px">리스크를 최소화하면서 꾸준한 수익을 원하는 투자자</p>
+      <p style="font-size:.82rem;color:var(--text-muted);margin-bottom:10px">리스크를 최소화하면서 꾸준한 수익을 원하는 투자자</p>
       <div class="guide-accounts">
         <span class="pill pill-green">듀얼 모멘텀</span>
         <span class="pill pill-blue">골든크로스+RSI</span>
@@ -679,7 +578,7 @@
     </div>
     <div class="guide-card">
       <div class="guide-type">균형형</div>
-      <p style="font-size:.83rem;color:var(--text-muted);margin-bottom:12px">수익과 리스크 사이의 균형을 추구하는 투자자</p>
+      <p style="font-size:.82rem;color:var(--text-muted);margin-bottom:10px">수익과 리스크 사이의 균형을 추구하는 투자자</p>
       <div class="guide-accounts">
         <span class="pill pill-green">듀얼 모멘텀</span>
         <span class="pill pill-orange">52주 신고가</span>
@@ -687,7 +586,7 @@
     </div>
     <div class="guide-card">
       <div class="guide-type">공격형</div>
-      <p style="font-size:.83rem;color:var(--text-muted);margin-bottom:12px">높은 수익을 위해 적극적인 리스크를 감수하는 투자자</p>
+      <p style="font-size:.82rem;color:var(--text-muted);margin-bottom:10px">높은 수익을 위해 적극적으로 리스크를 감수하는 투자자</p>
       <div class="guide-accounts">
         <span class="pill pill-orange">52주 신고가</span>
         <span class="pill pill-purple">변동성 돌파</span>
@@ -697,7 +596,7 @@
 </div>
 
 <!-- DISCLAIMER -->
-<div class="section">
+<div class="str-section">
   <div class="disclaimer">
     <div class="s-section-label" style="margin-bottom:12px;color:#ef4444"><i class="fa-solid fa-triangle-exclamation"></i> 투자 유의사항</div>
     <ul>
@@ -709,38 +608,38 @@
   </div>
 </div>
 
-<!-- CTA -->
+{% if not user %}
+<!-- CTA (비로그인 사용자만 표시) -->
 <div class="cta-bar">
   <h2>지금 바로 시작해보세요</h2>
   <p>검증된 전략을 자동으로 실행 — 매일 수동으로 확인하지 않아도 됩니다</p>
   <div class="cta-buttons">
     <a href="/login" class="btn btn-primary btn-lg"><i class="fa-solid fa-rocket"></i> 지금 시작하기</a>
-    <a href="/dashboard" class="btn btn-outline btn-lg"><i class="fa-solid fa-flask-vial"></i> 모의투자로 테스트</a>
+    <a href="/login" class="btn btn-outline btn-lg"><i class="fa-solid fa-flask-vial"></i> 모의투자로 테스트</a>
   </div>
 </div>
+{% endif %}
+{% endblock %}
 
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
-// ── Chart.js 전략별 가상 수익률 곡선 ──
 const chartDefaults = {
   responsive: true,
   maintainAspectRatio: false,
   animation: { duration: 1200, easing: 'easeInOutQuart' },
   plugins: { legend: { display: false }, tooltip: { enabled: false } },
-  scales: {
-    x: { display: false },
-    y: { display: false, min: -15 }
-  },
+  scales: { x: { display: false }, y: { display: false, min: -15 } },
   elements: { point: { radius: 0 } }
 };
 
 function makeGradient(ctx, color) {
-  const g = ctx.createLinearGradient(0, 0, 0, 130);
+  const g = ctx.createLinearGradient(0, 0, 0, 120);
   g.addColorStop(0, color.replace(')', ', 0.3)').replace('rgb', 'rgba'));
   g.addColorStop(1, color.replace(')', ', 0)').replace('rgb', 'rgba'));
   return g;
 }
 
-// ── 시뮬레이션 데이터 생성 ──
 function generateData(seed, trend, volatility, length = 60) {
   let val = 0;
   const data = [0];
@@ -754,94 +653,29 @@ function generateData(seed, trend, volatility, length = 60) {
 
 const labels = Array.from({ length: 60 }, (_, i) => i);
 
-// 전략 1: 골든크로스 — 완만한 상승, 낮은 변동성
 (function() {
   const ctx = document.getElementById('chart1').getContext('2d');
-  const data = generateData(1, 0.18, 1.8);
-  new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels,
-      datasets: [{
-        data,
-        borderColor: '#4f7cff',
-        borderWidth: 2,
-        fill: true,
-        backgroundColor: makeGradient(ctx, 'rgb(79,124,255)'),
-        tension: 0.4
-      }]
-    },
-    options: chartDefaults
-  });
+  new Chart(ctx, { type: 'line', data: { labels, datasets: [{ data: generateData(1, 0.18, 1.8), borderColor: '#4f7cff', borderWidth: 2, fill: true, backgroundColor: makeGradient(ctx, 'rgb(79,124,255)'), tension: 0.4 }] }, options: chartDefaults });
 })();
 
-// 전략 2: 듀얼 모멘텀 — 강한 상승, 하락장 방어
 (function() {
   const ctx = document.getElementById('chart2').getContext('2d');
   const data = generateData(2, 0.32, 1.5);
-  // 하락 구간 시뮬레이션 (방어)
   for (let i = 20; i < 30; i++) data[i] = data[19] - (i - 19) * 0.1;
   for (let i = 30; i < 60; i++) data[i] = data[29] + (i - 29) * 0.5;
-  new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels,
-      datasets: [{
-        data,
-        borderColor: '#22c55e',
-        borderWidth: 2,
-        fill: true,
-        backgroundColor: makeGradient(ctx, 'rgb(34,197,94)'),
-        tension: 0.4
-      }]
-    },
-    options: chartDefaults
-  });
+  new Chart(ctx, { type: 'line', data: { labels, datasets: [{ data, borderColor: '#22c55e', borderWidth: 2, fill: true, backgroundColor: makeGradient(ctx, 'rgb(34,197,94)'), tension: 0.4 }] }, options: chartDefaults });
 })();
 
-// 전략 3: 52주 신고가 — 급격한 상승, 중간 변동성
 (function() {
   const ctx = document.getElementById('chart3').getContext('2d');
-  const data = generateData(3, 0.28, 3.2);
-  new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels,
-      datasets: [{
-        data,
-        borderColor: '#f97316',
-        borderWidth: 2,
-        fill: true,
-        backgroundColor: makeGradient(ctx, 'rgb(249,115,22)'),
-        tension: 0.35
-      }]
-    },
-    options: chartDefaults
-  });
+  new Chart(ctx, { type: 'line', data: { labels, datasets: [{ data: generateData(3, 0.28, 3.2), borderColor: '#f97316', borderWidth: 2, fill: true, backgroundColor: makeGradient(ctx, 'rgb(249,115,22)'), tension: 0.35 }] }, options: chartDefaults });
 })();
 
-// 전략 4: 변동성 돌파 — 높은 변동성, 상승장 강함
 (function() {
   const ctx = document.getElementById('chart4').getContext('2d');
-  const data = generateData(4, 0.22, 4.5);
-  new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels,
-      datasets: [{
-        data,
-        borderColor: '#a855f7',
-        borderWidth: 2,
-        fill: true,
-        backgroundColor: makeGradient(ctx, 'rgb(168,85,247)'),
-        tension: 0.3
-      }]
-    },
-    options: chartDefaults
-  });
+  new Chart(ctx, { type: 'line', data: { labels, datasets: [{ data: generateData(4, 0.22, 4.5), borderColor: '#a855f7', borderWidth: 2, fill: true, backgroundColor: makeGradient(ctx, 'rgb(168,85,247)'), tension: 0.3 }] }, options: chartDefaults });
 })();
 
-// ── 숫자 카운트업 애니메이션 ──
 function animateCountUp(el) {
   const target = parseFloat(el.dataset.target);
   const suffix = el.dataset.suffix || '';
@@ -850,8 +684,7 @@ function animateCountUp(el) {
   function step(now) {
     const progress = Math.min((now - start) / duration, 1);
     const eased = 1 - Math.pow(1 - progress, 3);
-    const current = (target * eased).toFixed(target % 1 === 0 ? 0 : 2);
-    el.textContent = current + suffix;
+    el.textContent = (target * eased).toFixed(target % 1 === 0 ? 0 : 2) + suffix;
     if (progress < 1) requestAnimationFrame(step);
   }
   requestAnimationFrame(step);
@@ -868,5 +701,4 @@ const observer = new IntersectionObserver((entries) => {
 
 document.querySelectorAll('.s-stats').forEach(el => observer.observe(el));
 </script>
-</body>
-</html>
+{% endblock %}
