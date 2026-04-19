@@ -21,14 +21,17 @@
       --text: #e2e8f0;
       --text-muted: #94a3b8;
       --radius: 12px;
+      --sidebar-w: 240px;
+      --topbar-h: 56px;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+    body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; font-size: 15px; }
+    body.menu-open { overflow: hidden; }
     a { color: var(--primary); text-decoration: none; }
 
-    /* Sidebar */
+    /* ═══ SIDEBAR (desktop 1024px+) ═══ */
     .sidebar {
-      position: fixed; top: 0; left: 0; width: 240px; height: 100vh;
+      position: fixed; top: 0; left: 0; width: var(--sidebar-w); height: 100vh;
       background: var(--surface); border-right: 1px solid var(--border);
       display: flex; flex-direction: column; padding: 24px 0; z-index: 100;
     }
@@ -41,7 +44,7 @@
     .nav-item {
       display: flex; align-items: center; gap: 12px;
       padding: 12px 24px; color: var(--text-muted);
-      transition: all .2s; cursor: pointer;
+      transition: all .2s; cursor: pointer; min-height: 44px;
     }
     .nav-item:hover, .nav-item.active { color: var(--text); background: var(--surface2); }
     .nav-item.active { border-right: 3px solid var(--primary); }
@@ -49,32 +52,158 @@
       padding: 16px 24px; border-top: 1px solid var(--border);
       display: flex; align-items: center; gap: 12px;
     }
-    .user-avatar { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; }
-    .user-info { flex: 1; overflow: hidden; }
+    .user-avatar {
+      width: 36px; height: 36px; border-radius: 50%; object-fit: cover; flex-shrink: 0;
+    }
+    .user-info { flex: 1; min-width: 0; overflow: hidden; }
     .user-name { font-size: .875rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .user-email { font-size: .75rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-    /* Main */
-    .main { margin-left: 240px; padding: 32px; min-height: 100vh; }
+    /* ═══ TABLET TOP NAV (768px–1023px) ═══ */
+    .tablet-topnav {
+      display: none;
+      position: fixed; top: 0; left: 0; right: 0; height: var(--topbar-h); z-index: 100;
+      background: var(--surface); border-bottom: 1px solid var(--border);
+      align-items: center; padding: 0 20px; gap: 4px; overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .tablet-topnav::-webkit-scrollbar { display: none; }
+    .t-logo { font-size: 1.1rem; font-weight: 800; color: var(--primary); white-space: nowrap; margin-right: 8px; flex-shrink: 0; }
+    .t-logo span { color: var(--text); }
+    .t-nav-item {
+      display: flex; align-items: center; gap: 7px;
+      padding: 8px 14px; border-radius: 8px; color: var(--text-muted);
+      font-size: .85rem; font-weight: 500; white-space: nowrap;
+      transition: all .2s; min-height: 44px; flex-shrink: 0;
+    }
+    .t-nav-item:hover, .t-nav-item.active { color: var(--text); background: var(--surface2); }
+    .t-nav-item.active { color: var(--primary); }
+    .t-spacer { flex: 1; }
+    .t-avatar {
+      width: 32px; height: 32px; border-radius: 50%; object-fit: cover; flex-shrink: 0;
+    }
+    .t-avatar-div {
+      width: 32px; height: 32px; border-radius: 50%; background: var(--primary);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: .85rem; flex-shrink: 0; color: #fff;
+    }
+    .t-logout {
+      display: flex; align-items: center; gap: 6px;
+      padding: 6px 12px; border-radius: 8px; color: var(--text-muted);
+      font-size: .8rem; min-height: 36px; transition: all .2s; flex-shrink: 0;
+    }
+    .t-logout:hover { color: var(--danger); background: rgba(239,68,68,.1); }
+
+    /* ═══ MOBILE TOPBAR (<768px) ═══ */
+    .mobile-topbar {
+      display: none;
+      position: fixed; top: 0; left: 0; right: 0; height: var(--topbar-h); z-index: 200;
+      background: var(--surface); border-bottom: 1px solid var(--border);
+      align-items: center; justify-content: space-between; padding: 0 16px;
+    }
+    .mobile-logo { font-size: 1.2rem; font-weight: 800; color: var(--primary); }
+    .mobile-logo span { color: var(--text); }
+
+    /* ── Hamburger ── */
+    .hamburger {
+      width: 44px; height: 44px; border-radius: 8px;
+      border: 1px solid var(--border); background: var(--surface2); cursor: pointer;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px;
+      transition: background .2s; flex-shrink: 0;
+    }
+    .hamburger:hover { background: var(--border); }
+    .hb-line { width: 20px; height: 2px; background: var(--text); border-radius: 2px; transition: all .3s; }
+    .hamburger.open .hb-line:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+    .hamburger.open .hb-line:nth-child(2) { opacity: 0; transform: scaleX(0); }
+    .hamburger.open .hb-line:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+    /* ── Drawer overlay ── */
+    .mobile-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,.6); z-index: 250;
+    }
+    .mobile-overlay.open { display: block; }
+
+    /* ── Drawer ── */
+    .mobile-drawer {
+      position: fixed; top: 0; right: 0; width: 280px; height: 100vh; z-index: 300;
+      background: var(--surface); border-left: 1px solid var(--border);
+      display: flex; flex-direction: column;
+      transform: translateX(105%); transition: transform .3s cubic-bezier(.4,0,.2,1);
+    }
+    .mobile-drawer.open { transform: translateX(0); }
+    .drawer-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 16px; height: var(--topbar-h); border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .drawer-logo { font-size: 1.1rem; font-weight: 800; color: var(--primary); }
+    .drawer-logo span { color: var(--text); }
+    .drawer-close {
+      width: 36px; height: 36px; border-radius: 8px; border: 1px solid var(--border);
+      background: var(--surface2); cursor: pointer;
+      display: flex; align-items: center; justify-content: center; color: var(--text-muted);
+    }
+    .drawer-close:hover { color: var(--text); }
+    .drawer-nav { flex: 1; padding: 10px 0; overflow-y: auto; }
+    .drawer-item {
+      display: flex; align-items: center; gap: 14px;
+      padding: 14px 20px; color: var(--text-muted);
+      font-size: .9rem; transition: all .2s; min-height: 52px;
+    }
+    .drawer-item:hover { color: var(--text); background: var(--surface2); }
+    .drawer-item.active { color: var(--primary); background: var(--surface2); border-left: 3px solid var(--primary); }
+    .drawer-item i { width: 18px; text-align: center; }
+    .drawer-footer { padding: 16px; border-top: 1px solid var(--border); flex-shrink: 0; }
+    .drawer-user { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+    .drawer-avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+    .drawer-avatar-div {
+      width: 40px; height: 40px; border-radius: 50%; background: var(--primary);
+      display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0; color: #fff;
+    }
+
+    /* ═══ PUBLIC TOPBAR (non-authenticated) ═══ */
+    .public-topbar {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(15,17,23,.9); backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 24px; height: var(--topbar-h);
+    }
+    .pub-logo { font-size: 1.2rem; font-weight: 800; color: var(--primary); }
+    .pub-logo span { color: var(--text); }
+    .pub-nav { display: flex; gap: 8px; align-items: center; }
+    .pub-link {
+      padding: 8px 14px; border-radius: 8px; color: var(--text-muted);
+      font-size: .85rem; transition: all .2s; min-height: 44px;
+      display: inline-flex; align-items: center;
+    }
+    .pub-link:hover, .pub-link.active { color: var(--text); background: var(--surface2); }
+
+    /* ═══ MAIN CONTENT ═══ */
+    .main { margin-left: var(--sidebar-w); padding: 32px; min-height: 100vh; }
     .page-header { margin-bottom: 28px; }
     .page-header h1 { font-size: 1.5rem; font-weight: 700; }
     .page-header p { color: var(--text-muted); margin-top: 4px; }
 
-    /* Cards */
+    /* ═══ CARDS ═══ */
     .card {
       background: var(--surface); border: 1px solid var(--border);
       border-radius: var(--radius); padding: 24px;
     }
-    .card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+    .card-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 16px; flex-wrap: wrap; gap: 10px;
+    }
     .card-title { font-size: 1rem; font-weight: 600; }
 
-    /* Grid */
+    /* ═══ GRID ═══ */
     .grid { display: grid; gap: 20px; }
     .grid-2 { grid-template-columns: repeat(2, 1fr); }
     .grid-3 { grid-template-columns: repeat(3, 1fr); }
     .grid-4 { grid-template-columns: repeat(4, 1fr); }
 
-    /* Stats */
+    /* ═══ STATS ═══ */
     .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; }
     .stat-label { font-size: .75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: .05em; }
     .stat-value { font-size: 1.75rem; font-weight: 700; margin-top: 6px; }
@@ -82,39 +211,34 @@
     .positive { color: var(--success); }
     .negative { color: var(--danger); }
 
-    /* Buttons */
+    /* ═══ BUTTONS ═══ */
     .btn {
       display: inline-flex; align-items: center; gap: 8px;
       padding: 10px 18px; border-radius: 8px; font-size: .875rem;
       font-weight: 500; cursor: pointer; border: none; transition: all .2s;
+      min-height: 44px; font-family: inherit;
     }
     .btn-primary { background: var(--primary); color: #fff; }
     .btn-primary:hover { background: var(--primary-hover); }
     .btn-danger { background: var(--danger); color: #fff; }
     .btn-danger:hover { background: #dc2626; }
-    .btn-outline {
-      background: transparent; color: var(--text); border: 1px solid var(--border);
-    }
+    .btn-outline { background: transparent; color: var(--text); border: 1px solid var(--border); }
     .btn-outline:hover { background: var(--surface2); }
-    .btn-sm { padding: 6px 12px; font-size: .8rem; }
+    .btn-sm { padding: 6px 12px; font-size: .8rem; min-height: 36px; }
     .btn-success { background: var(--success); color: #fff; }
 
-    /* Toggle */
+    /* ═══ TOGGLE ═══ */
     .toggle { position: relative; display: inline-block; width: 44px; height: 24px; }
     .toggle input { opacity: 0; width: 0; height: 0; }
-    .toggle-slider {
-      position: absolute; cursor: pointer; inset: 0;
-      background: var(--surface2); border-radius: 24px; transition: .3s;
-    }
+    .toggle-slider { position: absolute; cursor: pointer; inset: 0; background: var(--surface2); border-radius: 24px; transition: .3s; }
     .toggle-slider:before {
       content: ''; position: absolute; width: 18px; height: 18px;
-      left: 3px; bottom: 3px; background: #fff;
-      border-radius: 50%; transition: .3s;
+      left: 3px; bottom: 3px; background: #fff; border-radius: 50%; transition: .3s;
     }
     .toggle input:checked + .toggle-slider { background: var(--primary); }
     .toggle input:checked + .toggle-slider:before { transform: translateX(20px); }
 
-    /* Badge */
+    /* ═══ BADGES ═══ */
     .badge {
       display: inline-flex; align-items: center; gap: 4px;
       padding: 3px 10px; border-radius: 20px; font-size: .75rem; font-weight: 500;
@@ -124,56 +248,112 @@
     .badge-warning { background: rgba(245,158,11,.15); color: var(--warning); }
     .badge-primary { background: rgba(79,124,255,.15); color: var(--primary); }
 
-    /* Table */
-    .table-wrap { overflow-x: auto; }
-    table { width: 100%; border-collapse: collapse; font-size: .875rem; }
-    th { padding: 10px 14px; text-align: left; color: var(--text-muted); font-weight: 500; border-bottom: 1px solid var(--border); }
+    /* ═══ TABLES ═══ */
+    .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    table { width: 100%; border-collapse: collapse; font-size: .875rem; min-width: 480px; }
+    th { padding: 10px 14px; text-align: left; color: var(--text-muted); font-weight: 500; border-bottom: 1px solid var(--border); white-space: nowrap; }
     td { padding: 12px 14px; border-bottom: 1px solid var(--border); }
     tr:last-child td { border-bottom: none; }
     tr:hover td { background: var(--surface2); }
 
-    /* Modal */
+    /* ═══ MOBILE CARD TABLE ═══ */
+    @media (max-width: 767px) {
+      .mobile-cards { min-width: unset; }
+      .mobile-cards thead { display: none; }
+      .mobile-cards tbody tr {
+        display: block; background: var(--surface2);
+        border-radius: 10px; margin-bottom: 10px;
+        border: 1px solid var(--border); padding: 10px 14px;
+      }
+      .mobile-cards tbody tr td {
+        display: flex; justify-content: space-between; align-items: center;
+        padding: 5px 0; border: none; font-size: .83rem;
+      }
+      .mobile-cards tbody tr td[data-label]::before {
+        content: attr(data-label);
+        color: var(--text-muted); font-size: .72rem; flex-shrink: 0; margin-right: 8px;
+      }
+      .mobile-cards tbody tr:hover td { background: transparent; }
+    }
+
+    /* ═══ MODAL ═══ */
     .modal-overlay {
       display: none; position: fixed; inset: 0; background: rgba(0,0,0,.6);
-      z-index: 1000; align-items: center; justify-content: center;
+      z-index: 1000; align-items: center; justify-content: center; padding: 16px;
     }
     .modal-overlay.open { display: flex; }
     .modal {
       background: var(--surface); border: 1px solid var(--border);
-      border-radius: var(--radius); padding: 28px; width: 480px; max-width: 95vw;
+      border-radius: var(--radius); padding: 28px; width: 480px; max-width: 100%;
+      max-height: 90vh; overflow-y: auto;
     }
     .modal-title { font-size: 1.125rem; font-weight: 700; margin-bottom: 20px; }
-    .modal-footer { display: flex; gap: 10px; justify-content: flex-end; margin-top: 24px; }
+    .modal-footer { display: flex; gap: 10px; justify-content: flex-end; margin-top: 24px; flex-wrap: wrap; }
 
-    /* Form */
+    /* ═══ FORM ═══ */
     .form-group { margin-bottom: 16px; }
     .form-label { display: block; font-size: .875rem; color: var(--text-muted); margin-bottom: 6px; }
     .form-control {
       width: 100%; padding: 10px 12px; background: var(--surface2);
       border: 1px solid var(--border); border-radius: 8px; color: var(--text);
       font-size: .875rem; outline: none; transition: border-color .2s;
+      min-height: 44px; font-family: inherit;
     }
     .form-control:focus { border-color: var(--primary); }
     select.form-control option { background: var(--surface2); }
 
-    /* Alert */
-    .alert {
-      padding: 12px 16px; border-radius: 8px; margin-bottom: 16px;
-      font-size: .875rem;
-    }
+    /* ═══ ALERT ═══ */
+    .alert { padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; font-size: .875rem; }
     .alert-danger { background: rgba(239,68,68,.15); color: var(--danger); border: 1px solid rgba(239,68,68,.3); }
     .alert-success { background: rgba(34,197,94,.15); color: var(--success); border: 1px solid rgba(34,197,94,.3); }
 
-    @media (max-width: 768px) {
-      .sidebar { transform: translateX(-100%); }
-      .main { margin-left: 0; padding: 16px; }
+    /* ═══ RESPONSIVE BREAKPOINTS ═══ */
+
+    /* Desktop 1024px+ */
+    @media (min-width: 1024px) {
+      .sidebar { display: flex; }
+      .tablet-topnav, .mobile-topbar { display: none; }
+      .mobile-drawer, .mobile-overlay { display: none !important; }
+      .main { margin-left: var(--sidebar-w); padding: 32px; }
+      .public-main { margin-left: 0; }
+    }
+
+    /* Tablet 768px–1023px */
+    @media (min-width: 768px) and (max-width: 1023px) {
+      .sidebar { display: none; }
+      .tablet-topnav { display: flex; }
+      .mobile-topbar { display: none; }
+      .main { margin-left: 0; padding: 72px 24px 24px; }
+      .grid-4 { grid-template-columns: repeat(2, 1fr); }
+      .stat-value { font-size: 1.4rem; }
+    }
+
+    /* Mobile <768px */
+    @media (max-width: 767px) {
+      .sidebar { display: none; }
+      .tablet-topnav { display: none; }
+      .mobile-topbar { display: flex; }
+      .main { margin-left: 0; padding: 68px 14px 20px; }
       .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+      .page-header h1 { font-size: 1.25rem; }
+      .page-header p { font-size: .85rem; }
+      .card { padding: 16px; }
+      .stat-value { font-size: 1.3rem; }
+      .modal { padding: 20px; }
+      .btn-sm { min-height: 40px; padding: 8px 14px; }
+    }
+
+    @media (max-width: 400px) {
+      .main { padding: 64px 12px 16px; }
     }
   </style>
   {% block head %}{% endblock %}
 </head>
 <body>
-  {% if user is defined and user %}
+
+{% if user is defined and user %}
+
+  <!-- ═══ DESKTOP SIDEBAR ═══ -->
   <aside class="sidebar">
     <div class="sidebar-logo">Auto<span>Market</span></div>
     <nav class="sidebar-nav">
@@ -183,15 +363,21 @@
       <a href="/strategies" class="nav-item {% if request.path == '/strategies' %}active{% endif %}">
         <i class="fa-solid fa-book-open"></i> 전략 소개
       </a>
+      {% if request.path == '/dashboard' %}
       <a href="#" onclick="openModal('addAccountModal')" class="nav-item">
         <i class="fa-solid fa-plus"></i> 계좌 추가
       </a>
+      {% else %}
+      <a href="/dashboard" class="nav-item">
+        <i class="fa-solid fa-plus"></i> 계좌 추가
+      </a>
+      {% endif %}
     </nav>
     <div class="sidebar-user">
       {% if user.picture %}
-      <img src="{{ user.picture }}" alt="avatar" class="user-avatar"/>
+      <img src="{{ user.picture }}" alt="avatar" class="user-avatar" loading="lazy"/>
       {% else %}
-      <div class="user-avatar" style="background:var(--primary);display:flex;align-items:center;justify-content:center;font-weight:700;">
+      <div class="user-avatar" style="background:var(--primary);display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;">
         {{ user.name[0] if user.name else 'U' }}
       </div>
       {% endif %}
@@ -202,44 +388,171 @@
       <a href="/logout" title="로그아웃"><i class="fa-solid fa-right-from-bracket" style="color:var(--text-muted)"></i></a>
     </div>
   </aside>
-  {% endif %}
 
-  <main class="main">
-    {% with messages = get_flashed_messages(with_categories=true) %}
-      {% for category, message in messages %}
-        <div class="alert alert-{{ category }}">{{ message }}</div>
-      {% endfor %}
-    {% endwith %}
-    {% block content %}{% endblock %}
-  </main>
+  <!-- ═══ TABLET TOP NAV ═══ -->
+  <nav class="tablet-topnav">
+    <a class="t-logo" href="/dashboard">Auto<span>Market</span></a>
+    <a href="/dashboard" class="t-nav-item {% if request.path == '/dashboard' %}active{% endif %}">
+      <i class="fa-solid fa-gauge"></i> 대시보드
+    </a>
+    <a href="/strategies" class="t-nav-item {% if request.path == '/strategies' %}active{% endif %}">
+      <i class="fa-solid fa-book-open"></i> 전략
+    </a>
+    {% if request.path == '/dashboard' %}
+    <a href="#" onclick="openModal('addAccountModal')" class="t-nav-item">
+      <i class="fa-solid fa-plus"></i> 계좌 추가
+    </a>
+    {% else %}
+    <a href="/dashboard" class="t-nav-item">
+      <i class="fa-solid fa-plus"></i> 계좌 추가
+    </a>
+    {% endif %}
+    <div class="t-spacer"></div>
+    {% if user.picture %}
+    <img src="{{ user.picture }}" alt="avatar" class="t-avatar" loading="lazy"/>
+    {% else %}
+    <div class="t-avatar-div">{{ user.name[0] if user.name else 'U' }}</div>
+    {% endif %}
+    <a href="/logout" class="t-logout" title="로그아웃"><i class="fa-solid fa-right-from-bracket"></i></a>
+  </nav>
 
-  <script>
-    function openModal(id) { document.getElementById(id).classList.add('open'); }
-    function closeModal(id) { document.getElementById(id).classList.remove('open'); }
-    document.querySelectorAll('.modal-overlay').forEach(m => {
-      m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); });
+  <!-- ═══ MOBILE TOPBAR ═══ -->
+  <div class="mobile-topbar">
+    <div class="mobile-logo">Auto<span>Market</span></div>
+    <button class="hamburger" id="hamburgerBtn"
+            aria-label="메뉴 열기" aria-expanded="false"
+            onclick="toggleMobileMenu()">
+      <span class="hb-line"></span>
+      <span class="hb-line"></span>
+      <span class="hb-line"></span>
+    </button>
+  </div>
+
+  <!-- ═══ MOBILE OVERLAY + DRAWER ═══ -->
+  <div class="mobile-overlay" id="mobileOverlay" onclick="closeMobileMenu()"></div>
+  <div class="mobile-drawer" id="mobileDrawer" role="dialog" aria-label="메뉴">
+    <div class="drawer-header">
+      <div class="drawer-logo">Auto<span>Market</span></div>
+      <button class="drawer-close" onclick="closeMobileMenu()" aria-label="닫기">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+    <nav class="drawer-nav">
+      <a href="/dashboard" class="drawer-item {% if request.path == '/dashboard' %}active{% endif %}" onclick="closeMobileMenu()">
+        <i class="fa-solid fa-gauge"></i> 대시보드
+      </a>
+      <a href="/strategies" class="drawer-item {% if request.path == '/strategies' %}active{% endif %}" onclick="closeMobileMenu()">
+        <i class="fa-solid fa-book-open"></i> 전략 가이드
+      </a>
+      {% if request.path == '/dashboard' %}
+      <a href="#" class="drawer-item" onclick="closeMobileMenu(); setTimeout(()=>openModal('addAccountModal'),300)">
+        <i class="fa-solid fa-plus"></i> 계좌 추가
+      </a>
+      {% else %}
+      <a href="/dashboard" class="drawer-item" onclick="closeMobileMenu()">
+        <i class="fa-solid fa-plus"></i> 계좌 추가
+      </a>
+      {% endif %}
+    </nav>
+    <div class="drawer-footer">
+      <div class="drawer-user">
+        {% if user.picture %}
+        <img src="{{ user.picture }}" alt="avatar" class="drawer-avatar" loading="lazy"/>
+        {% else %}
+        <div class="drawer-avatar-div">{{ user.name[0] if user.name else 'U' }}</div>
+        {% endif %}
+        <div class="user-info">
+          <div class="user-name">{{ user.name }}</div>
+          <div class="user-email">{{ user.email }}</div>
+        </div>
+      </div>
+      <a href="/logout" class="btn btn-outline" style="width:100%;justify-content:center">
+        <i class="fa-solid fa-right-from-bracket"></i> 로그아웃
+      </a>
+    </div>
+  </div>
+
+{% else %}
+
+  <!-- ═══ PUBLIC TOPBAR (비로그인) ═══ -->
+  <header class="public-topbar">
+    <a href="/" class="pub-logo">Auto<span>Market</span></a>
+    <nav class="pub-nav">
+      <a href="/strategies" class="pub-link {% if request.path == '/strategies' %}active{% endif %}">전략 가이드</a>
+      <a href="/login" class="btn btn-outline btn-sm">로그인</a>
+      <a href="/login" class="btn btn-primary btn-sm">시작하기</a>
+    </nav>
+  </header>
+
+{% endif %}
+
+<main class="main {% if not (user is defined and user) %}public-main{% endif %}" style="{% if not (user is defined and user) %}margin-left:0;padding:24px{% endif %}">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for category, message in messages %}
+      <div class="alert alert-{{ category }}">{{ message }}</div>
+    {% endfor %}
+  {% endwith %}
+  {% block content %}{% endblock %}
+</main>
+
+<script>
+  // ── Modal ──
+  function openModal(id) { document.getElementById(id).classList.add('open'); }
+  function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+  document.querySelectorAll('.modal-overlay').forEach(m => {
+    m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); });
+  });
+
+  // ── Mobile Menu ──
+  function toggleMobileMenu() {
+    const drawer = document.getElementById('mobileDrawer');
+    if (!drawer) return;
+    drawer.classList.contains('open') ? closeMobileMenu() : openMobileMenu();
+  }
+  function openMobileMenu() {
+    const drawer = document.getElementById('mobileDrawer');
+    const overlay = document.getElementById('mobileOverlay');
+    const btn = document.getElementById('hamburgerBtn');
+    drawer.classList.add('open');
+    overlay.classList.add('open');
+    btn.classList.add('open');
+    btn.setAttribute('aria-expanded', 'true');
+    document.body.classList.add('menu-open');
+  }
+  function closeMobileMenu() {
+    const drawer = document.getElementById('mobileDrawer');
+    const overlay = document.getElementById('mobileOverlay');
+    const btn = document.getElementById('hamburgerBtn');
+    if (!drawer) return;
+    drawer.classList.remove('open');
+    overlay.classList.remove('open');
+    if (btn) { btn.classList.remove('open'); btn.setAttribute('aria-expanded', 'false'); }
+    document.body.classList.remove('menu-open');
+  }
+  // ESC key to close
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeMobileMenu(); });
+
+  // ── API helper ──
+  async function apiFetch(url, options = {}) {
+    const res = await fetch(url, {
+      headers: { 'Content-Type': 'application/json', ...options.headers },
+      ...options,
     });
-
-    async function apiFetch(url, options = {}) {
-      const res = await fetch(url, {
-        headers: { 'Content-Type': 'application/json', ...options.headers },
-        ...options,
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || `HTTP ${res.status}`);
-      }
-      return res.json();
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || `HTTP ${res.status}`);
     }
+    return res.json();
+  }
 
-    function showAlert(msg, type = 'danger') {
-      const el = document.createElement('div');
-      el.className = `alert alert-${type}`;
-      el.textContent = msg;
-      document.querySelector('.main').prepend(el);
-      setTimeout(() => el.remove(), 4000);
-    }
-  </script>
-  {% block scripts %}{% endblock %}
+  function showAlert(msg, type = 'danger') {
+    const el = document.createElement('div');
+    el.className = `alert alert-${type}`;
+    el.textContent = msg;
+    document.querySelector('.main').prepend(el);
+    setTimeout(() => el.remove(), 4000);
+  }
+</script>
+{% block scripts %}{% endblock %}
 </body>
 </html>

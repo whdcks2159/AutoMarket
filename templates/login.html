@@ -18,8 +18,8 @@
       justify-content: center;
     }
     .login-wrap {
-      width: 420px;
-      padding: 48px 40px;
+      width: min(420px, calc(100vw - 32px));
+      padding: clamp(28px, 6vw, 48px) clamp(20px, 6vw, 40px);
       background: #1a1d27;
       border: 1px solid #2e3350;
       border-radius: 16px;

@@ -2,7 +2,6 @@
 {% block title %}투자 전략 가이드 — AutoMarket{% endblock %}
 
 {% block head %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
   :root {
     --blue: #4f7cff;
@@ -57,6 +56,7 @@
 
   /* ── STRATEGY CARDS ── */
   .strategies-grid { display: grid; gap: 24px; }
+  @media (min-width: 1024px) { .strategies-grid { grid-template-columns: repeat(2, 1fr); } }
   .s-card {
     border-radius: var(--radius); border: 1px solid var(--border);
     background: var(--surface); overflow: hidden;
@@ -144,6 +144,24 @@
   }
 
   /* ── GUIDE ── */
+  /* ── ACCORDION (mobile) ── */
+  .s-toggle-btn {
+    display: none; width: 100%; align-items: center; justify-content: space-between;
+    padding: 12px 26px; background: var(--surface2); border: none; border-top: 1px solid var(--border);
+    color: var(--text-muted); font-size: .85rem; cursor: pointer; font-family: inherit;
+    transition: background .2s;
+  }
+  .s-toggle-btn:hover { background: var(--border); color: var(--text); }
+  .s-toggle-icon { transition: transform .3s; }
+  .s-body { transition: none; }
+  @media (max-width: 767px) {
+    .s-toggle-btn { display: flex; }
+    .s-body { display: none; }
+    .s-body.expanded { display: grid; }
+    .s-chart-wrap { display: none; }
+    .s-card { cursor: default; }
+  }
+
   .guide-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
   @media (max-width: 768px) { .guide-grid { grid-template-columns: 1fr; } }
   .guide-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; }
@@ -241,6 +259,10 @@
         </div>
       </div>
       <div class="s-chart-wrap"><canvas id="chart1"></canvas></div>
+      <button class="s-toggle-btn" onclick="toggleCard(this)" aria-expanded="false">
+        <span>자세히 보기</span>
+        <i class="fa-solid fa-chevron-down s-toggle-icon"></i>
+      </button>
       <div class="s-body">
         <div>
           <div class="s-section-label">작동 원리</div>
@@ -314,6 +336,10 @@
         </div>
       </div>
       <div class="s-chart-wrap"><canvas id="chart2"></canvas></div>
+      <button class="s-toggle-btn" onclick="toggleCard(this)" aria-expanded="false">
+        <span>자세히 보기</span>
+        <i class="fa-solid fa-chevron-down s-toggle-icon"></i>
+      </button>
       <div class="s-body">
         <div>
           <div class="s-section-label">작동 원리</div>
@@ -411,6 +437,10 @@
         </div>
       </div>
       <div class="s-chart-wrap"><canvas id="chart3"></canvas></div>
+      <button class="s-toggle-btn" onclick="toggleCard(this)" aria-expanded="false">
+        <span>자세히 보기</span>
+        <i class="fa-solid fa-chevron-down s-toggle-icon"></i>
+      </button>
       <div class="s-body">
         <div>
           <div class="s-section-label">작동 원리</div>
@@ -487,6 +517,10 @@
         </div>
       </div>
       <div class="s-chart-wrap"><canvas id="chart4"></canvas></div>
+      <button class="s-toggle-btn" onclick="toggleCard(this)" aria-expanded="false">
+        <span>자세히 보기</span>
+        <i class="fa-solid fa-chevron-down s-toggle-icon"></i>
+      </button>
       <div class="s-body">
         <div>
           <div class="s-section-label">작동 원리</div>
@@ -623,6 +657,17 @@
 
 {% block scripts %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+function toggleCard(btn) {
+  const body = btn.nextElementSibling;
+  const icon = btn.querySelector('.s-toggle-icon');
+  const isOpen = body.classList.contains('expanded');
+  body.classList.toggle('expanded', !isOpen);
+  icon.style.transform = isOpen ? '' : 'rotate(180deg)';
+  btn.querySelector('span').textContent = isOpen ? '자세히 보기' : '접기';
+  btn.setAttribute('aria-expanded', String(!isOpen));
+}
+</script>
 <script>
 const chartDefaults = {
   responsive: true,

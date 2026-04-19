@@ -24,7 +24,7 @@
 {% else %}
 
 <!-- 계좌 카드 목록 -->
-<div class="grid grid-2" id="accountList">
+<div class="grid grid-2" id="accountList" style="grid-template-columns:repeat(auto-fill,minmax(min(100%,340px),1fr))">
   {% for account in accounts %}
   <div class="card account-card" data-id="{{ account.id }}">
     <div class="card-header">
@@ -68,14 +68,14 @@
       </div>
     </div>
 
-    <div style="display:flex;gap:8px;flex-wrap:wrap">
-      <a href="/account/{{ account.id }}" class="btn btn-outline btn-sm">
-        <i class="fa-solid fa-chart-line"></i> 상세보기
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px">
+      <a href="/account/{{ account.id }}" class="btn btn-outline btn-sm" style="flex:1;justify-content:center;min-width:90px">
+        <i class="fa-solid fa-chart-line"></i> 상세
       </a>
-      <button class="btn btn-outline btn-sm" onclick="openStrategyModal({{ account.id }}, '{{ account.strategy or '' }}')">
-        <i class="fa-solid fa-sliders"></i> 전략 변경
+      <button class="btn btn-outline btn-sm" onclick="openStrategyModal({{ account.id }}, '{{ account.strategy or '' }}')" style="flex:1;justify-content:center;min-width:90px">
+        <i class="fa-solid fa-sliders"></i> 전략
       </button>
-      <button class="btn btn-outline btn-sm" onclick="openScreenerModal({{ account.id }}, '{{ account.market_type }}')">
+      <button class="btn btn-outline btn-sm" onclick="openScreenerModal({{ account.id }}, '{{ account.market_type }}')" style="flex:1;justify-content:center;min-width:90px">
         <i class="fa-solid fa-magnifying-glass-chart"></i> 스크리너
       </button>
       <button class="btn btn-danger btn-sm" onclick="deleteAccount({{ account.id }})">
@@ -102,7 +102,7 @@
     </div>
   </div>
   <div class="table-wrap">
-    <table id="scanTable">
+    <table id="scanTable" class="mobile-cards">
       <thead>
         <tr><th>시간</th><th>전략</th><th>종목</th><th>신호</th><th>사유</th></tr>
       </thead>
@@ -132,7 +132,7 @@
     <div class="card-title">최근 매매 내역</div>
   </div>
   <div class="table-wrap">
-    <table id="tradeTable">
+    <table id="tradeTable" class="mobile-cards">
       <thead>
         <tr>
           <th>시간</th><th>계좌</th><th>종목</th><th>구분</th>
@@ -359,15 +359,15 @@ async function loadRecentTrades() {
           ? '<span class="badge badge-danger">실패</span>'
           : '<span class="badge badge-warning">대기</span>';
         rows.push(`<tr>
-          <td>${dt}</td>
-          <td>${item.account.name}</td>
-          <td><strong>${t.symbol_name || t.symbol}</strong></td>
-          <td>${side}</td>
-          <td>${t.quantity.toLocaleString()}</td>
-          <td>₩${t.price.toLocaleString()}</td>
-          <td>₩${(t.amount||0).toLocaleString()}</td>
-          <td><span class="badge badge-primary">${t.strategy||'-'}</span></td>
-          <td>${status}</td>
+          <td data-label="시간">${dt}</td>
+          <td data-label="계좌">${item.account.name}</td>
+          <td data-label="종목"><strong>${t.symbol_name || t.symbol}</strong></td>
+          <td data-label="구분">${side}</td>
+          <td data-label="수량">${t.quantity.toLocaleString()}</td>
+          <td data-label="가격">₩${t.price.toLocaleString()}</td>
+          <td data-label="금액">₩${(t.amount||0).toLocaleString()}</td>
+          <td data-label="전략"><span class="badge badge-primary">${t.strategy||'-'}</span></td>
+          <td data-label="상태">${status}</td>
         </tr>`);
       }
     }
@@ -578,11 +578,11 @@ async function loadScanResults() {
         : '<span class="badge badge-warning">관찰</span>';
       const label = strategyLabels[r.strategy] || r.strategy;
       return `<tr>
-        <td>${dt}</td>
-        <td><span class="badge badge-primary">${label}</span></td>
-        <td><strong>${r.ticker}</strong></td>
-        <td>${badge}</td>
-        <td style="font-size:.8rem;color:var(--text-muted)">${r.reason || '-'}</td>
+        <td data-label="시간">${dt}</td>
+        <td data-label="전략"><span class="badge badge-primary">${label}</span></td>
+        <td data-label="종목"><strong>${r.ticker}</strong></td>
+        <td data-label="신호">${badge}</td>
+        <td data-label="사유" style="font-size:.8rem;color:var(--text-muted)">${r.reason || '-'}</td>
       </tr>`;
     }).join('');
   } catch(e) {

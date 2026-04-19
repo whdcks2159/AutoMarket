@@ -6,23 +6,23 @@
 {% endblock %}
 
 {% block content %}
-<div class="page-header" style="display:flex;align-items:flex-start;justify-content:space-between">
+<div class="page-header" style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px">
   <div>
     <h1>{{ account.name }}</h1>
     <p>{{ account.account_number }} · {{ account.market_type }} · {{ strategy_labels.get(account.strategy, '전략 미설정') }}</p>
   </div>
-  <div style="display:flex;gap:10px">
-    <button class="btn btn-outline" onclick="openModal('editAccountModal')">
+  <div style="display:flex;gap:10px;flex-wrap:wrap">
+    <button class="btn btn-outline btn-sm" onclick="openModal('editAccountModal')">
       <i class="fa-solid fa-pen"></i> 편집
     </button>
-    <a href="/dashboard" class="btn btn-outline">
+    <a href="/dashboard" class="btn btn-outline btn-sm">
       <i class="fa-solid fa-arrow-left"></i> 돌아가기
     </a>
   </div>
 </div>
 
 <!-- 상태 카드 -->
-<div class="grid grid-4" style="margin-bottom:24px">
+<div class="grid grid-4" style="margin-bottom:24px;grid-template-columns:repeat(auto-fill,minmax(min(100%,180px),1fr))">
   <div class="stat-card">
     <div class="stat-label">자동매매</div>
     <div class="stat-value" style="font-size:1.25rem">
@@ -54,7 +54,7 @@
     </button>
   </div>
   <div class="table-wrap">
-    <table>
+    <table class="mobile-cards">
       <thead>
         <tr><th>종목</th><th>수량</th><th>평균 매수가</th><th>현재가</th><th>평가금액</th><th>수익률</th></tr>
       </thead>
@@ -72,7 +72,7 @@
     <span id="tradePager" style="color:var(--text-muted);font-size:.875rem"></span>
   </div>
   <div class="table-wrap">
-    <table>
+    <table class="mobile-cards">
       <thead>
         <tr><th>시간</th><th>종목</th><th>구분</th><th>수량</th><th>가격</th><th>금액</th><th>전략</th><th>상태</th></tr>
       </thead>
@@ -168,12 +168,12 @@ async function loadHoldings() {
       const rateClass = pnlRate >= 0 ? 'positive' : 'negative';
       const rateSign = pnlRate >= 0 ? '+' : '';
       return `<tr>
-        <td><strong>${name}</strong><br><small style="color:var(--text-muted)">${symbol}</small></td>
-        <td>${qty.toLocaleString()}</td>
-        <td>₩${avgPrice.toLocaleString()}</td>
-        <td>₩${curPrice.toLocaleString()}</td>
-        <td>₩${evalAmt.toLocaleString()}</td>
-        <td class="${rateClass}">${rateSign}${pnlRate.toFixed(2)}%</td>
+        <td data-label="종목"><strong>${name}</strong><small style="color:var(--text-muted);display:block">${symbol}</small></td>
+        <td data-label="수량">${qty.toLocaleString()}</td>
+        <td data-label="평균 매수가">₩${avgPrice.toLocaleString()}</td>
+        <td data-label="현재가">₩${curPrice.toLocaleString()}</td>
+        <td data-label="평가금액">₩${evalAmt.toLocaleString()}</td>
+        <td data-label="수익률" class="${rateClass}">${rateSign}${pnlRate.toFixed(2)}%</td>
       </tr>`;
     }).join('');
   } catch(e) {
@@ -204,14 +204,14 @@ async function loadTrades(page = 1) {
         ? '<span class="badge badge-danger">실패</span>'
         : '<span class="badge badge-warning">대기</span>';
       return `<tr>
-        <td>${dt}</td>
-        <td>${t.symbol_name || t.symbol}</td>
-        <td>${side}</td>
-        <td>${t.quantity.toLocaleString()}</td>
-        <td>₩${t.price.toLocaleString()}</td>
-        <td>₩${(t.amount||0).toLocaleString()}</td>
-        <td><span class="badge badge-primary">${t.strategy||'-'}</span></td>
-        <td>${status}</td>
+        <td data-label="시간">${dt}</td>
+        <td data-label="종목">${t.symbol_name || t.symbol}</td>
+        <td data-label="구분">${side}</td>
+        <td data-label="수량">${t.quantity.toLocaleString()}</td>
+        <td data-label="가격">₩${t.price.toLocaleString()}</td>
+        <td data-label="금액">₩${(t.amount||0).toLocaleString()}</td>
+        <td data-label="전략"><span class="badge badge-primary">${t.strategy||'-'}</span></td>
+        <td data-label="상태">${status}</td>
       </tr>`;
     }).join('');
 
