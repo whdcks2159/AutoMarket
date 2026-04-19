@@ -53,9 +53,11 @@ def login():
 
 @auth_bp.route('/login/callback')
 def callback():
+    error = request.args.get('error')
     code = request.args.get('code')
     if not code:
-        flash('인증 코드가 없습니다.', 'danger')
+        reason = error or '알 수 없음'
+        flash(f'Google 인증 실패: {reason}', 'danger')
         return redirect(url_for('auth.login_page'))
 
     client = WebApplicationClient(Config.GOOGLE_CLIENT_ID)
