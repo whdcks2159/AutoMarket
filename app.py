@@ -26,8 +26,27 @@ def create_app(config_name: str = None) -> Flask:
         app.register_blueprint(screener_bp)
 
         db.create_all()
+        _migrate_schema(db)
 
     return app
+
+
+def _migrate_schema(db):
+    """기존 테이블에 누락된 컬럼을 추가한다."""
+    migrations = [
+        ("accounts", "screener_enabled", "BOOLEAN DEFAULT FALSE"),
+        ("accounts", "screener_targets", "VARCHAR(128) DEFAULT 'KOSPI,KOSDAQ'"),
+        ("accounts", "screener_max_symbols", "INTEGER DEFAULT 5"),
+        ("accounts", "screener_per_symbol_limit", "FLOAT DEFAULT 500000.0"),
+        ("accounts", "screener_daily_buy_limit", "INTEGER DEFAULT 3"),
+    ]
+    with db.engine.connect() as conn:
+        for table, column, col_def in migrations:
+            try:
+                conn.execute(db.text(f"ALTER TABLE {table} ADD COLUMN {column} {col_def}"))
+                conn.commit()
+            except Exception:
+                conn.rollback()
 
 
 app = create_app()
