@@ -184,7 +184,7 @@ class KISClient:
         if self.mock_mode:
             return _mock_volume_rank_kr(market_div)
 
-        url = f"{self.base_url}/uapi/domestic-stock/v1/ranking/volume"
+        url = f"{self.base_url}/uapi/domestic-stock/v1/quotations/volume-rank"
         tr_id = "FHPST01710000"
         params = {
             "fid_cond_mrkt_div_code": market_div,
