@@ -1,6 +1,17 @@
 from abc import ABC, abstractmethod
 from datetime import datetime
 import logging
+import pytz
+
+_KST = pytz.timezone('Asia/Seoul')
+
+
+def _now_kst() -> datetime:
+    return datetime.now(_KST).replace(tzinfo=None)
+
+
+def _today_kst():
+    return datetime.now(_KST).date()
 
 logger = logging.getLogger(__name__)
 
@@ -52,7 +63,7 @@ class BaseStrategy(ABC):
             order_id=order_id,
             status=status,
             error_message=error,
-            executed_at=datetime.utcnow(),
+            executed_at=_now_kst(),
         )
         db.session.add(trade)
         db.session.commit()
@@ -62,7 +73,7 @@ class BaseStrategy(ABC):
         """오늘 스캔 결과가 있으면 사용, 없으면 기본 목록 반환."""
         from models import ScanResult
         from datetime import date, datetime
-        today_start = datetime.combine(date.today(), datetime.min.time())
+        today_start = datetime.combine(_today_kst(), datetime.min.time())
         max_n = getattr(self.account, 'screener_max_symbols', 5)
         results = (ScanResult.query
                    .filter_by(account_id=self.account.id, strategy=self.name, signal='BUY')
@@ -78,7 +89,7 @@ class BaseStrategy(ABC):
             return default_symbols
         from models import ScanResult
         from datetime import date, datetime
-        today_start = datetime.combine(date.today(), datetime.min.time())
+        today_start = datetime.combine(_today_kst(), datetime.min.time())
         results = (ScanResult.query
                    .filter_by(account_id=self.account.id, strategy=self.name, signal='BUY')
                    .filter(ScanResult.scanned_at >= today_start)
@@ -101,7 +112,7 @@ class BaseStrategy(ABC):
             return True
         from models import Trade
         from datetime import date, datetime
-        today_start = datetime.combine(date.today(), datetime.min.time())
+        today_start = datetime.combine(_today_kst(), datetime.min.time())
         count = (Trade.query
                  .filter_by(account_id=self.account.id, side='BUY', status='FILLED')
                  .filter(Trade.executed_at >= today_start)
@@ -114,7 +125,7 @@ class BaseStrategy(ABC):
             return False
         from models import Trade
         from datetime import date, datetime
-        today_start = datetime.combine(date.today(), datetime.min.time())
+        today_start = datetime.combine(_today_kst(), datetime.min.time())
         return (Trade.query
                 .filter_by(account_id=self.account.id, symbol=symbol, side='BUY')
                 .filter(Trade.executed_at >= today_start)

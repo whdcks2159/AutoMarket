@@ -1,7 +1,14 @@
 """국내주 스크리너 — 코스피/코스닥 전체 종목 대상 전략별 신호 탐색"""
 import time
 import logging
+import pytz
 from datetime import datetime, date
+
+_KST = pytz.timezone('Asia/Seoul')
+
+
+def _now_kst() -> datetime:
+    return datetime.now(_KST).replace(tzinfo=None)
 
 logger = logging.getLogger(__name__)
 
@@ -232,7 +239,7 @@ class KoreaScreener:
     def _save_results(self, results: list, strategy: str):
         try:
             from models import db, ScanResult, WatchList
-            now = datetime.utcnow()
+            now = _now_kst()
             for r in results:
                 scan = ScanResult(
                     user_id=self.account.user_id,

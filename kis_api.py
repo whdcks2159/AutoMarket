@@ -2,12 +2,22 @@ import os
 import json
 import base64
 import hashlib
+import logging
 import requests
 from datetime import datetime, timedelta
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.backends import default_backend
 
 from config import Config
+
+logger = logging.getLogger(__name__)
+
+
+def _raise_for_status(resp):
+    if not resp.ok:
+        logger.error("KIS API 오류 %s %s → %s: %s",
+                     resp.request.method, resp.url, resp.status_code, resp.text[:500])
+    resp.raise_for_status()
 
 
 # ─── AES-256 암호화/복호화 ─────────────────────────────────────────────────────
@@ -78,7 +88,7 @@ class KISClient:
             "appsecret": self.app_secret,
         }
         resp = requests.post(url, json=body, timeout=10)
-        resp.raise_for_status()
+        _raise_for_status(resp)
         data = resp.json()
         token = data['access_token']
 
@@ -113,7 +123,7 @@ class KISClient:
         tr_id = "FHKST01010100"
         params = {"fid_cond_mrkt_div_code": "J", "fid_input_iscd": symbol}
         resp = requests.get(url, headers=self._headers(tr_id), params=params, timeout=10)
-        resp.raise_for_status()
+        _raise_for_status(resp)
         return resp.json()
 
     def get_price_us(self, symbol: str, exchange: str = "NAS") -> dict:
@@ -125,7 +135,7 @@ class KISClient:
         tr_id = "HHDFS00000300"
         params = {"AUTH": "", "EXCD": exchange, "SYMB": symbol}
         resp = requests.get(url, headers=self._headers(tr_id), params=params, timeout=10)
-        resp.raise_for_status()
+        _raise_for_status(resp)
         return resp.json()
 
     def get_daily_ohlcv_kr(self, symbol: str, period: int = 120) -> list:
@@ -140,7 +150,7 @@ class KISClient:
             "fid_period_div_code": "D",
         }
         resp = requests.get(url, headers=self._headers(tr_id), params=params, timeout=10)
-        resp.raise_for_status()
+        _raise_for_status(resp)
         return resp.json().get('output2', [])
 
     def get_daily_ohlcv_us(self, symbol: str, exchange: str = "NAS", period: int = 120) -> list:
@@ -157,7 +167,7 @@ class KISClient:
             "MODP": "1",
         }
         resp = requests.get(url, headers=self._headers(tr_id), params=params, timeout=10)
-        resp.raise_for_status()
+        _raise_for_status(resp)
         return resp.json().get('output2', [])
 
     # ─── 스크리너 조회 ──────────────────────────────────────────────────────────
@@ -182,7 +192,7 @@ class KISClient:
             "fid_vol_cnt": "100000",
         }
         resp = requests.get(url, headers=self._headers(tr_id), params=params, timeout=15)
-        resp.raise_for_status()
+        _raise_for_status(resp)
         return resp.json().get('output', [])
 
     # ─── 잔고 조회 ──────────────────────────────────────────────────────────────
@@ -206,7 +216,7 @@ class KISClient:
             "CTX_AREA_NK100": "",
         }
         resp = requests.get(url, headers=self._headers(tr_id), params=params, timeout=10)
-        resp.raise_for_status()
+        _raise_for_status(resp)
         return resp.json()
 
     def get_balance_us(self) -> dict:
@@ -223,7 +233,7 @@ class KISClient:
             "CTX_AREA_NK200": "",
         }
         resp = requests.get(url, headers=self._headers("TTTS3012R"), params=params, timeout=10)
-        resp.raise_for_status()
+        _raise_for_status(resp)
         holdings = resp.json()
 
         # 외화 예수금 조회
@@ -238,7 +248,7 @@ class KISClient:
         }
         try:
             cash_resp = requests.get(cash_url, headers=self._headers("CTRP6504R"), params=cash_params, timeout=10)
-            cash_resp.raise_for_status()
+            cash__raise_for_status(resp)
             cash_data = cash_resp.json()
             output3 = cash_data.get('output3', [{}])
             frcr_cash = output3[0].get('frcr_dncl_amt_2', '0') if output3 else '0'
@@ -266,7 +276,7 @@ class KISClient:
             "ORD_UNPR": str(price),
         }
         resp = requests.post(url, headers=self._headers(tr_id), json=body, timeout=10)
-        resp.raise_for_status()
+        _raise_for_status(resp)
         return resp.json()
 
     def order_us(self, symbol: str, exchange: str, side: str, quantity: int, price: float = 0) -> dict:
@@ -287,7 +297,7 @@ class KISClient:
             "ORD_SVR_DVSN_CD": "0",
         }
         resp = requests.post(url, headers=self._headers(tr_id), json=body, timeout=10)
-        resp.raise_for_status()
+        _raise_for_status(resp)
         return resp.json()
 
     def get_stock_info_kr(self, symbol: str) -> dict:
@@ -303,7 +313,7 @@ class KISClient:
         tr_id = "FHKST01010100"
         params = {"fid_cond_mrkt_div_code": "J", "fid_input_iscd": symbol}
         resp = requests.get(url, headers=self._headers(tr_id), params=params, timeout=10)
-        resp.raise_for_status()
+        _raise_for_status(resp)
         return resp.json()
 
     def order_with_retry(self, symbol: str, side: str, quantity: int,
