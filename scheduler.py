@@ -114,11 +114,17 @@ def run_morning_scan_and_trade_kr(account_id: int, strategy_name: str):
         from strategies import STRATEGY_MAP
 
         account = Account.query.get(account_id)
-        if not account or not account.is_active or account.strategy != strategy_name:
-            logger.warning("계좌 조건 불충족 account=%s strategy=%s", account_id, strategy_name)
+        if not account:
+            logger.warning("계좌 없음 account_id=%s", account_id)
+            return
+        if not account.is_active:
+            logger.warning("계좌 비활성화 account=%s(%s) — 대시보드에서 자동매매 ON 필요", account_id, getattr(account, 'name', ''))
+            return
+        if account.strategy != strategy_name:
+            logger.warning("전략 불일치 account=%s 설정=%s 요청=%s", account_id, account.strategy, strategy_name)
             return
 
-        logger.info("스캔+매수 시작 account=%s(%s) strategy=%s", account_id, account.name, strategy_name)
+        logger.warning("스캔+매수 시작 account=%s(%s) strategy=%s", account_id, account.name, strategy_name)
         kis = KISClient(account)
 
         # 1단계: 전체 주식 스캔 (실패해도 매수는 진행 — 기본 종목 목록으로 fallback)
@@ -152,7 +158,7 @@ def run_all_morning_trade_kr(strategy_name: str):
         accounts = Account.query.filter_by(
             strategy=strategy_name, is_active=True, market_type='KR'
         ).all()
-        logger.info("전략=%s 대상 계좌 %d개", strategy_name, len(accounts))
+        logger.warning("전략=%s 대상 KR 활성 계좌 %d개", strategy_name, len(accounts))
         for account in accounts:
             run_morning_scan_and_trade_kr(account.id, strategy_name)
 
@@ -160,9 +166,9 @@ def run_all_morning_trade_kr(strategy_name: str):
 def job_morning_kr():
     """09:00 — 전체 주식 스캔 후 즉시 매수 (국내주 전략 공통)."""
     if not is_trading_day_kr():
-        logger.info("오늘은 휴장일 — 아침 매매 스킵")
+        logger.warning("오늘은 휴장일 — 아침 매매 스킵")
         return
-    logger.info("아침 스캔+매수 시작 (국내주)")
+    logger.warning("아침 스캔+매수 시작 (국내주)")
     for strategy in ('golden_rsi', 'week52_high', 'volatility_breakout'):
         run_all_morning_trade_kr(strategy)
 

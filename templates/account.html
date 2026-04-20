@@ -166,6 +166,10 @@ async function loadHoldings() {
       tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:24px">보유 종목이 없습니다</td></tr>';
       return;
     }
+    const cur = isUS ? '$' : '₩';
+    const fmtAmt = (v) => isUS
+      ? '$' + v.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})
+      : '₩' + v.toLocaleString('ko-KR', {maximumFractionDigits: 0});
     tbody.innerHTML = items.map(item => {
       const symbol = item.pdno || item.ovrs_pdno || '';
       const name = item.prdt_name || item.ovrs_item_name || symbol;
@@ -179,9 +183,9 @@ async function loadHoldings() {
       return `<tr>
         <td data-label="종목"><strong>${name}</strong><small style="color:var(--text-muted);display:block">${symbol}</small></td>
         <td data-label="수량">${qty.toLocaleString()}</td>
-        <td data-label="평균 매수가">₩${avgPrice.toLocaleString()}</td>
-        <td data-label="현재가">₩${curPrice.toLocaleString()}</td>
-        <td data-label="평가금액">₩${evalAmt.toLocaleString()}</td>
+        <td data-label="평균 매수가">${fmtAmt(avgPrice)}</td>
+        <td data-label="현재가">${fmtAmt(curPrice)}</td>
+        <td data-label="평가금액">${fmtAmt(evalAmt)}</td>
         <td data-label="수익률" class="${rateClass}">${rateSign}${pnlRate.toFixed(2)}%</td>
       </tr>`;
     }).join('');
