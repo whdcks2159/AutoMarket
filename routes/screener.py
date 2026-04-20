@@ -1,7 +1,10 @@
+import pytz
 from flask import Blueprint, request, jsonify
 from datetime import datetime, date
 from models import db, Account, ScanResult, WatchList
 from routes.auth import login_required, current_user
+
+_KST = pytz.timezone('Asia/Seoul')
 
 screener_bp = Blueprint('screener', __name__, url_prefix='/api/screener')
 
@@ -73,7 +76,8 @@ def get_results(account_id):
     if strategy:
         q = q.filter_by(strategy=strategy)
     if today_only:
-        today_start = datetime.combine(date.today(), datetime.min.time())
+        today_kst = datetime.now(_KST).date()
+        today_start = datetime.combine(today_kst, datetime.min.time())
         q = q.filter(ScanResult.scanned_at >= today_start)
 
     results = q.order_by(ScanResult.scanned_at.desc()).limit(limit).all()
@@ -123,6 +127,9 @@ def run_scan(account_id):
             return jsonify({'strategy': strategy, 'market': 'US', 'symbols': symbols, 'count': len(symbols)})
 
     except Exception as e:
+        import traceback
+        logger = __import__('logging').getLogger(__name__)
+        logger.error("수동 스캔 실패 account=%s strategy=%s: %s", account_id, strategy, traceback.format_exc())
         return jsonify({'error': str(e)}), 500
 
 

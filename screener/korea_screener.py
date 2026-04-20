@@ -108,36 +108,33 @@ class KoreaScreener:
         for market in targets:
             market = market.strip()
             market_div = 'Q' if market == 'KOSDAQ' else 'J'
-            try:
-                stocks = self.kis.get_volume_rank_kr(market_div)
-                for s in stocks:
-                    symbol = (s.get('mksc_shrn_iscd') or s.get('stck_shrn_iscd', '')).strip()
-                    if not symbol or symbol in seen:
-                        continue
+            stocks = self.kis.get_volume_rank_kr(market_div)  # 에러 시 바깥으로 전파
+            logger.info("거래량 순위 조회 %s: %d개", market, len(stocks))
+            for s in stocks:
+                symbol = (s.get('mksc_shrn_iscd') or s.get('stck_shrn_iscd', '')).strip()
+                if not symbol or symbol in seen:
+                    continue
 
-                    # 상한가/하한가/관리/정지 제외
-                    status = s.get('iscd_stat_cls_code', '00')
-                    if status in SKIP_STATUS:
-                        continue
+                status = s.get('iscd_stat_cls_code', '00')
+                if status in SKIP_STATUS:
+                    continue
 
-                    try:
-                        volume = int(s.get('acml_vol', 0))
-                        mktcap = float(s.get('hts_avls', 0))
-                    except (ValueError, TypeError):
-                        continue
+                try:
+                    volume = int(s.get('acml_vol', 0))
+                    mktcap = float(s.get('hts_avls', 0))
+                except (ValueError, TypeError):
+                    continue
 
-                    if volume < MIN_VOLUME or mktcap < MIN_MKTCAP:
-                        continue
+                if volume < MIN_VOLUME or mktcap < MIN_MKTCAP:
+                    continue
 
-                    seen.add(symbol)
-                    candidates.append({
-                        'symbol': symbol,
-                        'name': s.get('hts_kor_isnm', symbol),
-                        'volume': volume,
-                        'mktcap': mktcap,
-                    })
-            except Exception as e:
-                logger.warning("get_candidates %s: %s", market, e)
+                seen.add(symbol)
+                candidates.append({
+                    'symbol': symbol,
+                    'name': s.get('hts_kor_isnm', symbol),
+                    'volume': volume,
+                    'mktcap': mktcap,
+                })
 
         return candidates
 
