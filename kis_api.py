@@ -289,8 +289,13 @@ class KISClient:
             cash_resp = requests.get(cash_url, headers=self._headers("CTRP6504R"), params=cash_params, timeout=10)
             _raise_for_status(cash_resp)
             cash_data = cash_resp.json()
-            output3 = cash_data.get('output3', [{}])
-            row = output3[0] if output3 else {}
+            logger.info("외화 예수금 응답 keys: %s", list(cash_data.keys()))
+            output3 = cash_data.get('output3', {})
+            logger.info("output3 type=%s, value=%s", type(output3).__name__, str(output3)[:200])
+            if isinstance(output3, list):
+                row = output3[0] if output3 else {}
+            else:
+                row = output3 or {}
             holdings['frcr_dncl_amt_2'] = row.get('frcr_dncl_amt_2', '0')   # USD 예수금
             holdings['frcr_evlu_amt2'] = row.get('frcr_evlu_amt2', '0')      # USD 주식 평가액
         except Exception as e:
