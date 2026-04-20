@@ -155,8 +155,8 @@ async function loadHoldings() {
     if (isUS) {
       const stockEval = parseFloat(data.frcr_evlu_amt2 || 0);
       const cash = parseFloat(data.frcr_dncl_amt_2 || 0);
-      const totalUsd = stockEval + cash;
-      document.querySelector('#balanceStat .stat-value').textContent = '$' + totalUsd.toLocaleString('en-US', {maximumFractionDigits: 2});
+      const totalKrw = stockEval + cash;
+      document.querySelector('#balanceStat .stat-value').textContent = '₩' + totalKrw.toLocaleString('ko-KR', {maximumFractionDigits: 0});
     } else {
       const totalEval = parseFloat(output2.tot_evlu_amt || 0);
       document.querySelector('#balanceStat .stat-value').textContent = '₩' + totalEval.toLocaleString('ko-KR', {maximumFractionDigits: 0});

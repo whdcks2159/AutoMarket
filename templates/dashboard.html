@@ -335,8 +335,8 @@ async function loadBalances() {
         if (isUS) {
           const stockEval = parseFloat(data.frcr_evlu_amt2 || 0);
           const cash = parseFloat(data.frcr_dncl_amt_2 || 0);
-          const usd = stockEval + cash;
-          el.querySelector('div:last-child').textContent = '$' + usd.toLocaleString('en-US', {maximumFractionDigits: 2});
+          const total = stockEval + cash;
+          el.querySelector('div:last-child').textContent = '₩' + total.toLocaleString('ko-KR', {maximumFractionDigits: 0});
         } else {
           const krw = parseFloat(output2.dnca_tot_amt || 0);
           el.querySelector('div:last-child').textContent = '₩' + krw.toLocaleString('ko-KR', {maximumFractionDigits: 0});
