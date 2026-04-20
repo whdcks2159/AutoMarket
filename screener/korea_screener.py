@@ -44,7 +44,7 @@ class KoreaScreener:
         results.sort(key=lambda x: x.get('volume', 0), reverse=True)
         selected = results[:top_n]
         self._save_results(selected, 'golden_rsi')
-        logger.info("골든RSI 스캔 완료: %d/%d 신호 발생", len(selected), len(candidates))
+        logger.warning("골든RSI 스캔 완료: %d/%d 신호 발생", len(selected), len(candidates))
         return [r['symbol'] for r in selected]
 
     def scan_week52_high(self, top_n: int = None) -> list:
@@ -66,7 +66,7 @@ class KoreaScreener:
         results.sort(key=lambda x: x.get('breakout_strength', 0), reverse=True)
         selected = results[:top_n]
         self._save_results(selected, 'week52_high')
-        logger.info("52주 신고가 스캔 완료: %d/%d 신호 발생", len(selected), len(candidates))
+        logger.warning("52주 신고가 스캔 완료: %d/%d 신호 발생", len(selected), len(candidates))
         return [r['symbol'] for r in selected]
 
     def scan_volatility_breakout(self, top_n: int = None) -> list:
@@ -89,7 +89,7 @@ class KoreaScreener:
         results.sort(key=lambda x: x.get('volume', 0), reverse=True)
         selected = results[:top_n]
         self._save_results(selected, 'volatility_breakout')
-        logger.info("변동성 돌파 스캔 완료: %d/%d 신호 발생", len(selected), len(candidates))
+        logger.warning("변동성 돌파 스캔 완료: %d/%d 신호 발생", len(selected), len(candidates))
         return [r['symbol'] for r in selected]
 
     # ─── 후보 종목 조회 ─────────────────────────────────────────────────────────
@@ -109,8 +109,8 @@ class KoreaScreener:
             market = market.strip()
             market_div = 'Q' if market == 'KOSDAQ' else 'J'
             stocks = self.kis.get_volume_rank_kr(market_div)  # 에러 시 바깥으로 전파
-            logger.info("거래량 순위 조회 %s: %d개", market, len(stocks))
-            for s in stocks:
+            logger.warning("거래량 순위 조회 %s: %d개", market, len(stocks))
+            for s in stocks[:40]:  # 상위 40개만 처리 (타임아웃 방지)
                 symbol = (s.get('mksc_shrn_iscd') or s.get('stck_shrn_iscd', '')).strip()
                 if not symbol or symbol in seen:
                     continue
