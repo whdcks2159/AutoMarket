@@ -37,6 +37,7 @@ class GoldenRSIStrategy(BaseStrategy):
     def _process(self, symbol: str, holdings: dict):
         ohlcv = self.kis.get_daily_ohlcv_kr(symbol, period=30)
         if len(ohlcv) < 21:
+            self.log_signal(f"{symbol} 데이터 부족 ({len(ohlcv)}봉)", event_type='INFO')
             return
 
         closes = [float(row['stck_clpr']) for row in reversed(ohlcv)]
@@ -48,6 +49,12 @@ class GoldenRSIStrategy(BaseStrategy):
 
         golden_cross = sma5 > sma20
         dead_cross = sma5 < sma20
+
+        self.log_signal(
+            f"{symbol} 분석 | 가격={current_price:,.0f} SMA5={sma5:.0f} SMA20={sma20:.0f} "
+            f"RSI={rsi:.1f} 골든크로스={golden_cross} 보유={held_qty}",
+            event_type='INFO'
+        )
 
         # 매수 판단
         if held_qty == 0:

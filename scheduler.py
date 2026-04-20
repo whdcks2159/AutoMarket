@@ -119,10 +119,10 @@ def run_morning_scan_and_trade_kr(account_id: int, strategy_name: str):
             return
 
         logger.info("스캔+매수 시작 account=%s(%s) strategy=%s", account_id, account.name, strategy_name)
-        try:
-            kis = KISClient(account)
+        kis = KISClient(account)
 
-            # 1단계: 전체 주식 스캔
+        # 1단계: 전체 주식 스캔 (실패해도 매수는 진행 — 기본 종목 목록으로 fallback)
+        try:
             from screener.korea_screener import KoreaScreener
             sc = KoreaScreener(account, kis)
             if strategy_name == 'golden_rsi':
@@ -131,15 +131,17 @@ def run_morning_scan_and_trade_kr(account_id: int, strategy_name: str):
                 sc.scan_week52_high()
             elif strategy_name == 'volatility_breakout':
                 sc.scan_volatility_breakout()
+        except Exception as e:
+            logger.error("스캔 실패 account=%s strategy=%s — 기본 종목으로 매수 진행: %s", account_id, strategy_name, e)
 
-            # 2단계: 스캔 결과 기반 매수/매도 실행
+        # 2단계: 매수/매도 실행 (스캔 성공 여부와 무관하게 항상 실행)
+        try:
             strategy_cls = STRATEGY_MAP.get(strategy_name)
             if strategy_cls:
                 strategy_cls(account, kis).run()
-            logger.info("스캔+매수 완료 account=%s strategy=%s", account_id, strategy_name)
-
+            logger.info("매수/매도 완료 account=%s strategy=%s", account_id, strategy_name)
         except Exception as e:
-            logger.error("morning scan+trade account=%s strategy=%s error=%s", account_id, strategy_name, e, exc_info=True)
+            logger.error("매수/매도 실패 account=%s strategy=%s: %s", account_id, strategy_name, e, exc_info=True)
 
 
 def run_all_morning_trade_kr(strategy_name: str):
