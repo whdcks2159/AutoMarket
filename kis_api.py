@@ -289,9 +289,9 @@ class KISClient:
             cash_resp = requests.get(cash_url, headers=self._headers("CTRP6504R"), params=cash_params, timeout=10)
             _raise_for_status(cash_resp)
             cash_data = cash_resp.json()
-            logger.info("외화 예수금 응답 keys: %s", list(cash_data.keys()))
+            logger.warning("외화 예수금 응답 keys: %s", list(cash_data.keys()))
             output3 = cash_data.get('output3', {})
-            logger.info("output3 type=%s, value=%s", type(output3).__name__, str(output3)[:200])
+            logger.warning("output3 type=%s, value=%s", type(output3).__name__, str(output3)[:200])
             if isinstance(output3, list):
                 row = output3[0] if output3 else {}
             else:
