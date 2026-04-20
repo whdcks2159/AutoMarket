@@ -141,6 +141,11 @@ class KISClient:
     def get_daily_ohlcv_kr(self, symbol: str, period: int = 120) -> list:
         if self.mock_mode:
             return _mock_ohlcv_kr(symbol, period)
+        import pytz
+        from datetime import timedelta
+        kst = pytz.timezone('Asia/Seoul')
+        end_dt = datetime.now(kst)
+        start_dt = end_dt - timedelta(days=max(period * 2, 365))
         url = f"{self.base_url}/uapi/domestic-stock/v1/quotations/inquire-daily-price"
         tr_id = "FHKST01010400"
         params = {
@@ -148,6 +153,8 @@ class KISClient:
             "fid_input_iscd": symbol,
             "fid_org_adj_prc": "0",
             "fid_period_div_code": "D",
+            "fid_input_date_1": start_dt.strftime("%Y%m%d"),
+            "fid_input_date_2": end_dt.strftime("%Y%m%d"),
         }
         resp = requests.get(url, headers=self._headers(tr_id), params=params, timeout=10)
         _raise_for_status(resp)

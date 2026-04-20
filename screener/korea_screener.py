@@ -28,6 +28,7 @@ class KoreaScreener:
         """골든크로스+RSI 신호 종목 탐색 → 거래량 상위 top_n 반환."""
         top_n = top_n or getattr(self.account, 'screener_max_symbols', 5)
         candidates = self._get_candidates()
+        logger.info("골든RSI 스캔 후보 %d개", len(candidates))
         results = []
 
         for item in candidates:
