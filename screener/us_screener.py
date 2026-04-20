@@ -34,7 +34,7 @@ class USScreener:
                 score = self._calc_momentum(symbol, excd)
                 if score is not None and score > 0.012:  # 무위험 수익률 3개월분 초과
                     scores.append({'symbol': symbol, 'excd': excd, 'score': score})
-                time.sleep(0.06)
+                time.sleep(1.0)
             except Exception as e:
                 logger.warning("dual_momentum scan %s: %s", symbol, e)
 
@@ -60,7 +60,7 @@ class USScreener:
                 signal = self._check_week52_high(symbol, excd)
                 if signal:
                     results.append({'symbol': symbol, 'excd': excd, **signal})
-                time.sleep(0.06)
+                time.sleep(1.0)
             except Exception as e:
                 logger.warning("week52 scan %s: %s", symbol, e)
 
@@ -86,7 +86,7 @@ class USScreener:
                 signal = self._check_volatility_breakout(symbol, excd)
                 if signal:
                     results.append({'symbol': symbol, 'excd': excd, **signal})
-                time.sleep(0.06)
+                time.sleep(1.0)
             except Exception as e:
                 logger.warning("volatility scan %s: %s", symbol, e)
 

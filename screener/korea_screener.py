@@ -37,7 +37,7 @@ class KoreaScreener:
                 signal = self._check_golden_rsi(symbol)
                 if signal:
                     results.append({**item, **signal})
-                time.sleep(0.06)  # API 초당 ~16회 이하
+                time.sleep(1.0)  # 실계좌 API 레이트 리밋 대비
             except Exception as e:
                 logger.warning("golden_rsi scan %s: %s", symbol, e)
 
@@ -59,7 +59,7 @@ class KoreaScreener:
                 signal = self._check_week52_high(symbol)
                 if signal:
                     results.append({**item, **signal})
-                time.sleep(0.06)
+                time.sleep(1.0)
             except Exception as e:
                 logger.warning("week52 scan %s: %s", symbol, e)
 
@@ -82,7 +82,7 @@ class KoreaScreener:
                 signal = self._check_volatility_breakout(symbol)
                 if signal:
                     results.append({**item, **signal})
-                time.sleep(0.06)
+                time.sleep(1.0)
             except Exception as e:
                 logger.warning("volatility scan %s: %s", symbol, e)
 

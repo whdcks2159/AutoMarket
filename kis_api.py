@@ -3,6 +3,7 @@ import json
 import base64
 import hashlib
 import logging
+import time
 import requests
 from datetime import datetime, timedelta
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
@@ -15,9 +16,40 @@ logger = logging.getLogger(__name__)
 
 def _raise_for_status(resp):
     if not resp.ok:
+        body = resp.text[:300]
         logger.error("KIS API 오류 %s %s → %s: %s",
-                     resp.request.method, resp.url, resp.status_code, resp.text[:500])
-    resp.raise_for_status()
+                     resp.request.method, resp.url, resp.status_code, body)
+        raise requests.HTTPError(
+            f"{resp.status_code} {resp.reason} | KIS: {body}",
+            response=resp,
+        )
+
+
+def _get_with_retry(url, headers, params, timeout=10, max_retries=3) -> requests.Response:
+    """초당 거래건수 초과(EGW00201) 시 backoff 후 재시도."""
+    delay = 1.0
+    for attempt in range(max_retries):
+        resp = requests.get(url, headers=headers, params=params, timeout=timeout)
+        if resp.ok:
+            body = resp.json()
+            if body.get('msg_cd') == 'EGW00201':
+                logger.warning("KIS 레이트 리밋 (EGW00201), %.1f초 후 재시도 (%d/%d)", delay, attempt + 1, max_retries)
+                time.sleep(delay)
+                delay *= 2
+                continue
+            return resp
+        # 500 이고 EGW00201 인 경우
+        try:
+            body = resp.json()
+            if body.get('msg_cd') == 'EGW00201':
+                logger.warning("KIS 레이트 리밋 500 (EGW00201), %.1f초 후 재시도 (%d/%d)", delay, attempt + 1, max_retries)
+                time.sleep(delay)
+                delay *= 2
+                continue
+        except Exception:
+            pass
+        return resp
+    return resp
 
 
 # ─── AES-256 암호화/복호화 ─────────────────────────────────────────────────────
@@ -156,7 +188,7 @@ class KISClient:
             "fid_input_date_1": start_dt.strftime("%Y%m%d"),
             "fid_input_date_2": end_dt.strftime("%Y%m%d"),
         }
-        resp = requests.get(url, headers=self._headers(tr_id), params=params, timeout=10)
+        resp = _get_with_retry(url, headers=self._headers(tr_id), params=params, timeout=10)
         _raise_for_status(resp)
         return resp.json().get('output2', [])
 
@@ -173,7 +205,7 @@ class KISClient:
             "BYMD": "",
             "MODP": "1",
         }
-        resp = requests.get(url, headers=self._headers(tr_id), params=params, timeout=10)
+        resp = _get_with_retry(url, headers=self._headers(tr_id), params=params, timeout=10)
         _raise_for_status(resp)
         return resp.json().get('output2', [])
 
