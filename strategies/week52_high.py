@@ -3,6 +3,7 @@
 매도: 매수가 대비 -10% 손절 OR 20일선 하향 이탈
 실행: 09:00 / 15:20
 """
+import time
 from .base import BaseStrategy
 
 
@@ -27,6 +28,7 @@ class Week52HighStrategy(BaseStrategy):
                     self._process_kr(symbol, holdings)
                 except Exception as e:
                     self.log_signal(f"{symbol} 오류: {e}", event_type='ERROR')
+                time.sleep(1.0)
         else:
             holdings = self._get_holdings_us()
             symbol_pairs = self.get_scan_symbols_us(self.US_SYMBOLS)
@@ -35,6 +37,7 @@ class Week52HighStrategy(BaseStrategy):
                     self._process_us(symbol, excd, holdings)
                 except Exception as e:
                     self.log_signal(f"{symbol} 오류: {e}", event_type='ERROR')
+                time.sleep(1.0)
 
     def _process_kr(self, symbol: str, holdings: dict):
         ohlcv = self.kis.get_daily_ohlcv_kr(symbol, period=260)

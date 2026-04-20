@@ -48,6 +48,7 @@ class VolatilityBreakoutStrategy(BaseStrategy):
 
         for symbol in symbols:
             try:
+                time.sleep(1.0)
                 ohlcv = self.kis.get_daily_ohlcv_kr(symbol, period=5)
                 if len(ohlcv) < 2:
                     continue
@@ -93,6 +94,7 @@ class VolatilityBreakoutStrategy(BaseStrategy):
         symbol_pairs = self.get_scan_symbols_us(self.US_SYMBOLS)
         for symbol, excd in symbol_pairs:
             try:
+                time.sleep(1.0)
                 ohlcv = self.kis.get_daily_ohlcv_us(symbol, excd, period=5)
                 if len(ohlcv) < 2:
                     continue

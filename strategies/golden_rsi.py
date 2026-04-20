@@ -5,6 +5,7 @@
      OR RSI > 70
 실행: 09:00 / 15:20
 """
+import time
 from .base import BaseStrategy
 
 
@@ -24,6 +25,7 @@ class GoldenRSIStrategy(BaseStrategy):
                 self._process(symbol, holdings)
             except Exception as e:
                 self.log_signal(f"{symbol} 처리 오류: {e}", event_type='ERROR')
+            time.sleep(1.0)
 
     def _get_holdings(self) -> dict:
         try:
