@@ -59,17 +59,16 @@ class BaseStrategy(ABC):
         return trade
 
     def get_scan_symbols_kr(self, default_symbols: list) -> list:
-        """스크리너 활성화 시 오늘 스캔 결과 반환, 미활성 시 기본 목록 반환."""
-        if not getattr(self.account, 'screener_enabled', False):
-            return default_symbols
+        """오늘 스캔 결과가 있으면 사용, 없으면 기본 목록 반환."""
         from models import ScanResult
         from datetime import date, datetime
         today_start = datetime.combine(date.today(), datetime.min.time())
+        max_n = getattr(self.account, 'screener_max_symbols', 5)
         results = (ScanResult.query
                    .filter_by(account_id=self.account.id, strategy=self.name, signal='BUY')
                    .filter(ScanResult.scanned_at >= today_start)
                    .order_by(ScanResult.scanned_at.desc())
-                   .limit(self.account.screener_max_symbols)
+                   .limit(max_n)
                    .all())
         return [r.ticker for r in results] if results else default_symbols
 

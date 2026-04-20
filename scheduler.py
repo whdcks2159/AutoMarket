@@ -105,14 +105,59 @@ def run_all_active_screeners(strategy_name: str, market: str):
             run_screener_for_account(account.id, strategy_name, market)
 
 
-def job_screener_morning():
-    """장 시작 전 (08:50) 국내주 스크리너 실행."""
+def run_morning_scan_and_trade_kr(account_id: int, strategy_name: str):
+    """스캔 → 즉시 매수: 한 계좌에 대해 스크리너 실행 후 바로 전략 실행."""
+    from app import app
+    with app.app_context():
+        from models import Account
+        from kis_api import KISClient
+        from strategies import STRATEGY_MAP
+
+        account = Account.query.get(account_id)
+        if not account or not account.is_active or account.strategy != strategy_name:
+            return
+
+        try:
+            kis = KISClient(account)
+
+            # 1단계: 전체 주식 스캔
+            if strategy_name in ('golden_rsi', 'week52_high', 'volatility_breakout'):
+                from screener.korea_screener import KoreaScreener
+                sc = KoreaScreener(account, kis)
+                if strategy_name == 'golden_rsi':
+                    sc.scan_golden_rsi()
+                elif strategy_name == 'week52_high':
+                    sc.scan_week52_high()
+                elif strategy_name == 'volatility_breakout':
+                    sc.scan_volatility_breakout()
+
+            # 2단계: 스캔 결과 기반 매수/매도 실행
+            strategy_cls = STRATEGY_MAP.get(strategy_name)
+            if strategy_cls:
+                strategy_cls(account, kis).run()
+
+        except Exception as e:
+            logger.error("morning scan+trade account=%s strategy=%s error=%s", account_id, strategy_name, e)
+
+
+def run_all_morning_trade_kr(strategy_name: str):
+    """모든 활성 계좌에 대해 스캔+매수 실행."""
+    from app import app
+    with app.app_context():
+        from models import Account
+        accounts = Account.query.filter_by(strategy=strategy_name, is_active=True).all()
+        for account in accounts:
+            run_morning_scan_and_trade_kr(account.id, strategy_name)
+
+
+def job_morning_kr():
+    """09:00 — 전체 주식 스캔 후 즉시 매수 (국내주 전략 공통)."""
     if not is_trading_day_kr():
+        logger.info("오늘은 휴장일 — 아침 매매 스킵")
         return
-    logger.info("아침 스크리너 실행 (국내주)")
-    run_all_active_screeners('golden_rsi', 'KR')
-    run_all_active_screeners('week52_high', 'KR')
-    run_all_active_screeners('volatility_breakout', 'KR')
+    logger.info("아침 스캔+매수 시작 (국내주)")
+    run_all_morning_trade_kr('golden_rsi')
+    run_all_morning_trade_kr('week52_high')
 
 
 def job_screener_us_morning():
@@ -182,12 +227,17 @@ def job_dual_momentum():
 def create_scheduler() -> BackgroundScheduler:
     scheduler = BackgroundScheduler(timezone=KST)
 
-    # 골든RSI: 09:00 / 15:20
-    scheduler.add_job(job_golden_rsi, CronTrigger(hour=9, minute=0, timezone=KST), id='golden_rsi_open')
-    scheduler.add_job(job_golden_rsi, CronTrigger(hour=15, minute=20, timezone=KST), id='golden_rsi_close')
+    # 앱 시작 직후 1회 즉시 스캔+매수 (오늘 장 중이면 바로 실행)
+    from apscheduler.triggers.date import DateTrigger
+    from datetime import timedelta
+    run_at = datetime.now(KST) + timedelta(seconds=10)
+    scheduler.add_job(job_morning_kr, DateTrigger(run_date=run_at), id='morning_kr_boot')
 
-    # 52주 신고가: 09:00 / 15:20
-    scheduler.add_job(job_week52_high, CronTrigger(hour=9, minute=0, timezone=KST), id='week52_open')
+    # 국내주 아침: 09:00 전체 스캔+매수 (골든RSI, 52주 신고가)
+    scheduler.add_job(job_morning_kr, CronTrigger(hour=9, minute=0, timezone=KST), id='morning_kr')
+
+    # 국내주 장 마감: 15:20 매도 체크 (골든RSI, 52주 신고가)
+    scheduler.add_job(job_golden_rsi, CronTrigger(hour=15, minute=20, timezone=KST), id='golden_rsi_close')
     scheduler.add_job(job_week52_high, CronTrigger(hour=15, minute=20, timezone=KST), id='week52_close')
 
     # 변동성 돌파: 5분마다 09:00~15:30
@@ -200,13 +250,10 @@ def create_scheduler() -> BackgroundScheduler:
     # 듀얼 모멘텀: 매월 첫 거래일 23:30
     scheduler.add_job(job_dual_momentum, CronTrigger(hour=23, minute=30, timezone=KST), id='dual_momentum')
 
-    # 스크리너: 장 시작 전 08:50 (국내주)
-    scheduler.add_job(job_screener_morning, CronTrigger(hour=8, minute=50, timezone=KST), id='screener_kr_morning')
-
-    # 스크리너: 미국주 23:00
+    # 미국주 스크리너: 23:00
     scheduler.add_job(job_screener_us_morning, CronTrigger(hour=23, minute=0, timezone=KST), id='screener_us_morning')
 
-    # 스크리너: 듀얼 모멘텀 (월초 23:00)
+    # 듀얼 모멘텀 스크리너: 월초 23:00
     scheduler.add_job(job_screener_dual_momentum, CronTrigger(hour=23, minute=0, timezone=KST), id='screener_dual_momentum')
 
     return scheduler

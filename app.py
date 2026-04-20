@@ -41,6 +41,7 @@ def _migrate_schema(db):
         ("accounts", "screener_max_symbols", "INTEGER DEFAULT 5"),
         ("accounts", "screener_per_symbol_limit", "FLOAT DEFAULT 500000.0"),
         ("accounts", "screener_daily_buy_limit", "INTEGER DEFAULT 3"),
+        ("accounts", "is_mock", "BOOLEAN DEFAULT FALSE"),
     ]
     with db.engine.connect() as conn:
         for table, column, col_def in migrations:

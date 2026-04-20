@@ -44,6 +44,8 @@
     </div>
 
     <div style="margin-bottom:16px">
+      <span class="badge {% if account.is_mock %}badge-warning{% else %}badge-success{% endif %}" style="margin-right:4px">
+        {{ '모의투자' if account.is_mock else '실계좌' }}</span>
       <span class="badge {% if account.is_active %}badge-success{% else %}badge-warning{% endif %}">
         <i class="fa-solid fa-circle" style="font-size:.5rem"></i>
         {{ '자동매매 ON' if account.is_active else '자동매매 OFF' }}
@@ -187,6 +189,13 @@
         {% for key, label in strategy_labels.items() %}
         <option value="{{ key }}">{{ label }}</option>
         {% endfor %}
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">계좌 유형 *</label>
+      <select class="form-control" id="acc_is_mock">
+        <option value="false">실계좌 (실제 매매)</option>
+        <option value="true">모의투자 (가상)</option>
       </select>
     </div>
     <div class="form-group">
@@ -443,6 +452,7 @@ async function submitAddAccount() {
     app_secret: document.getElementById('acc_secret').value,
     market_type: document.getElementById('acc_market').value,
     investment_limit: document.getElementById('acc_limit').value,
+    is_mock: document.getElementById('acc_is_mock').value === 'true',
     strategy,
   };
   try {

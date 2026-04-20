@@ -39,6 +39,7 @@ class Account(db.Model):
 
     strategy = db.Column(db.String(64))  # golden_rsi, dual_momentum, week52_high, volatility_breakout
     is_active = db.Column(db.Boolean, default=False)
+    is_mock = db.Column(db.Boolean, default=False)  # True=모의투자, False=실계좌
     investment_limit = db.Column(db.Float, default=1000000.0)
     market_type = db.Column(db.String(8), default='KR')  # KR or US
 
@@ -63,6 +64,7 @@ class Account(db.Model):
             'account_number': self.account_number,
             'strategy': self.strategy,
             'is_active': self.is_active,
+            'is_mock': self.is_mock,
             'investment_limit': self.investment_limit,
             'market_type': self.market_type,
             'screener_enabled': self.screener_enabled,

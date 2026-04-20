@@ -54,8 +54,12 @@ class KISClient:
         self.app_secret = decrypt(account.encrypted_app_secret)
         self.account_number = account.account_number
         self.account_product = account.account_product
-        self.mock_mode = Config.MOCK_MODE
-        self.base_url = Config.KIS_BASE_URL
+        self.mock_mode = getattr(account, 'is_mock', True)
+        self.base_url = (
+            'https://openapivts.koreainvestment.com:29443'
+            if self.mock_mode else
+            'https://openapi.koreainvestment.com:9443'
+        )
         self._access_token = None
 
     # ─── 토큰 관리 ──────────────────────────────────────────────────────────────

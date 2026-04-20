@@ -43,6 +43,7 @@ def create_account():
         strategy=data.get('strategy'),
         investment_limit=float(data.get('investment_limit', 1000000)),
         market_type=data.get('market_type', 'KR'),
+        is_mock=bool(data.get('is_mock', True)),
     )
     db.session.add(account)
     db.session.commit()
@@ -77,6 +78,8 @@ def update_account(account_id):
         account.encrypted_app_key = encrypt(data['app_key'])
     if 'app_secret' in data and data['app_secret']:
         account.encrypted_app_secret = encrypt(data['app_secret'])
+    if 'is_mock' in data:
+        account.is_mock = bool(data['is_mock'])
 
     db.session.commit()
     return jsonify(account.to_dict())
