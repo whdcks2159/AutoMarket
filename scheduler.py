@@ -115,37 +115,42 @@ def run_morning_scan_and_trade_kr(account_id: int, strategy_name: str):
 
         account = Account.query.get(account_id)
         if not account or not account.is_active or account.strategy != strategy_name:
+            logger.warning("계좌 조건 불충족 account=%s strategy=%s", account_id, strategy_name)
             return
 
+        logger.info("스캔+매수 시작 account=%s(%s) strategy=%s", account_id, account.name, strategy_name)
         try:
             kis = KISClient(account)
 
             # 1단계: 전체 주식 스캔
-            if strategy_name in ('golden_rsi', 'week52_high', 'volatility_breakout'):
-                from screener.korea_screener import KoreaScreener
-                sc = KoreaScreener(account, kis)
-                if strategy_name == 'golden_rsi':
-                    sc.scan_golden_rsi()
-                elif strategy_name == 'week52_high':
-                    sc.scan_week52_high()
-                elif strategy_name == 'volatility_breakout':
-                    sc.scan_volatility_breakout()
+            from screener.korea_screener import KoreaScreener
+            sc = KoreaScreener(account, kis)
+            if strategy_name == 'golden_rsi':
+                sc.scan_golden_rsi()
+            elif strategy_name == 'week52_high':
+                sc.scan_week52_high()
+            elif strategy_name == 'volatility_breakout':
+                sc.scan_volatility_breakout()
 
             # 2단계: 스캔 결과 기반 매수/매도 실행
             strategy_cls = STRATEGY_MAP.get(strategy_name)
             if strategy_cls:
                 strategy_cls(account, kis).run()
+            logger.info("스캔+매수 완료 account=%s strategy=%s", account_id, strategy_name)
 
         except Exception as e:
-            logger.error("morning scan+trade account=%s strategy=%s error=%s", account_id, strategy_name, e)
+            logger.error("morning scan+trade account=%s strategy=%s error=%s", account_id, strategy_name, e, exc_info=True)
 
 
 def run_all_morning_trade_kr(strategy_name: str):
-    """모든 활성 계좌에 대해 스캔+매수 실행."""
+    """모든 활성 국내주 계좌에 대해 스캔+매수 실행."""
     from app import app
     with app.app_context():
         from models import Account
-        accounts = Account.query.filter_by(strategy=strategy_name, is_active=True).all()
+        accounts = Account.query.filter_by(
+            strategy=strategy_name, is_active=True, market_type='KR'
+        ).all()
+        logger.info("전략=%s 대상 계좌 %d개", strategy_name, len(accounts))
         for account in accounts:
             run_morning_scan_and_trade_kr(account.id, strategy_name)
 
@@ -156,8 +161,8 @@ def job_morning_kr():
         logger.info("오늘은 휴장일 — 아침 매매 스킵")
         return
     logger.info("아침 스캔+매수 시작 (국내주)")
-    run_all_morning_trade_kr('golden_rsi')
-    run_all_morning_trade_kr('week52_high')
+    for strategy in ('golden_rsi', 'week52_high', 'volatility_breakout'):
+        run_all_morning_trade_kr(strategy)
 
 
 def job_screener_us_morning():
