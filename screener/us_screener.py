@@ -1,7 +1,14 @@
 """미국주 스크리너 — S&P500/NASDAQ100 종목 대상 전략별 신호 탐색"""
 import time
 import logging
+import pytz
 from datetime import datetime
+
+_KST = pytz.timezone('Asia/Seoul')
+
+
+def _now_kst() -> datetime:
+    return datetime.now(_KST).replace(tzinfo=None)
 
 logger = logging.getLogger(__name__)
 
@@ -213,7 +220,7 @@ class USScreener:
                       make_reason, make_ticker):
         try:
             from models import db, ScanResult, WatchList
-            now = datetime.utcnow()
+            now = _now_kst()
             for r in results:
                 ticker_str = make_ticker(r)
                 scan = ScanResult(

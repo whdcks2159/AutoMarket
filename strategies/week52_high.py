@@ -119,14 +119,16 @@ class Week52HighStrategy(BaseStrategy):
         try:
             data = self.kis.get_balance_kr()
             return {item['pdno']: int(item.get('hldg_qty', 0)) for item in data.get('output1', [])}
-        except Exception:
+        except Exception as e:
+            self.log_signal(f"국내 잔고 조회 실패: {e}", event_type='ERROR')
             return {}
 
     def _get_holdings_us(self) -> dict:
         try:
             data = self.kis.get_balance_us()
             return {item['ovrs_pdno']: int(item.get('ovrs_cblc_qty', 0)) for item in data.get('output1', [])}
-        except Exception:
+        except Exception as e:
+            self.log_signal(f"미국 잔고 조회 실패: {e}", event_type='ERROR')
             return {}
 
     def _get_avg_buy_price_kr(self, symbol: str, holdings: dict) -> float:
@@ -135,8 +137,8 @@ class Week52HighStrategy(BaseStrategy):
             for item in data.get('output1', []):
                 if item['pdno'] == symbol:
                     return float(item.get('pchs_avg_pric', 0))
-        except Exception:
-            pass
+        except Exception as e:
+            self.log_signal(f"평균단가 조회 실패 {symbol}: {e}", event_type='ERROR')
         return 0.0
 
     def _calc_qty(self, price: float, market: str) -> int:

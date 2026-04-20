@@ -91,12 +91,22 @@ class DualMomentumStrategy(BaseStrategy):
                 self.log_signal(f"{target} 매수 오류: {e}", event_type='ERROR')
 
     def _sell_all(self, holdings: dict):
+        if not holdings:
+            return
+        try:
+            data = self.kis.get_balance_us()
+            excd_map = {item['ovrs_pdno']: item.get('ovrs_excg_cd', 'NAS')
+                        for item in data.get('output1', [])}
+        except Exception:
+            excd_map = {}
+
         for symbol, qty in holdings.items():
             if qty > 0:
                 try:
-                    price_data = self.kis.get_price_us(symbol)
+                    excd = excd_map.get(symbol, 'NAS')
+                    price_data = self.kis.get_price_us(symbol, excd)
                     price = float(price_data['output']['last'])
-                    result = self.kis.order_with_retry(symbol, 'SELL', qty, price, 'US')
+                    result = self.kis.order_with_retry(symbol, 'SELL', qty, price, 'US', excd)
                     self.record_trade(symbol, symbol, 'SELL', qty, price, result)
                 except Exception as e:
                     self.log_signal(f"{symbol} 전량 매도 오류: {e}", event_type='ERROR')

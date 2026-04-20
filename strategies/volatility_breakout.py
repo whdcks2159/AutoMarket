@@ -23,8 +23,9 @@ class VolatilityBreakoutStrategy(BaseStrategy):
     GAP_SKIP_RATE = 0.03
 
     def run(self):
+        import pytz
         from datetime import datetime
-        now = datetime.now()
+        now = datetime.now(pytz.timezone('Asia/Seoul')).replace(tzinfo=None)
         market = self.account.market_type
 
         if market == 'KR':
@@ -181,14 +182,16 @@ class VolatilityBreakoutStrategy(BaseStrategy):
         try:
             data = self.kis.get_balance_kr()
             return {item['pdno']: int(item.get('hldg_qty', 0)) for item in data.get('output1', [])}
-        except Exception:
+        except Exception as e:
+            self.log_signal(f"국내 잔고 조회 실패: {e}", event_type='ERROR')
             return {}
 
     def _get_holdings_us(self) -> dict:
         try:
             data = self.kis.get_balance_us()
             return {item['ovrs_pdno']: int(item.get('ovrs_cblc_qty', 0)) for item in data.get('output1', [])}
-        except Exception:
+        except Exception as e:
+            self.log_signal(f"미국 잔고 조회 실패: {e}", event_type='ERROR')
             return {}
 
     def _calc_qty(self, price: float, market: str) -> int:

@@ -146,8 +146,8 @@ class KISClient:
         kst = pytz.timezone('Asia/Seoul')
         end_dt = datetime.now(kst)
         start_dt = end_dt - timedelta(days=max(period * 2, 365))
-        url = f"{self.base_url}/uapi/domestic-stock/v1/quotations/inquire-daily-price"
-        tr_id = "FHKST01010400"
+        url = f"{self.base_url}/uapi/domestic-stock/v1/quotations/inquire-daily-itemchartprice"
+        tr_id = "FHKST03010100"
         params = {
             "fid_cond_mrkt_div_code": "J",
             "fid_input_iscd": symbol,
