@@ -248,13 +248,16 @@ class KISClient:
         }
         try:
             cash_resp = requests.get(cash_url, headers=self._headers("CTRP6504R"), params=cash_params, timeout=10)
-            cash__raise_for_status(resp)
+            _raise_for_status(cash_resp)
             cash_data = cash_resp.json()
             output3 = cash_data.get('output3', [{}])
-            frcr_cash = output3[0].get('frcr_dncl_amt_2', '0') if output3 else '0'
-            holdings['frcr_dncl_amt_2'] = frcr_cash
-        except Exception:
+            row = output3[0] if output3 else {}
+            holdings['frcr_dncl_amt_2'] = row.get('frcr_dncl_amt_2', '0')   # USD 예수금
+            holdings['frcr_evlu_amt2'] = row.get('frcr_evlu_amt2', '0')      # USD 주식 평가액
+        except Exception as e:
+            logger.warning("외화 예수금 조회 실패: %s", e)
             holdings['frcr_dncl_amt_2'] = '0'
+            holdings['frcr_evlu_amt2'] = '0'
 
         return holdings
 

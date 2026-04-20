@@ -151,8 +151,16 @@ async function loadHoldings() {
     const items = data.output1 || [];
     const raw2 = data.output2;
     const output2 = Array.isArray(raw2) ? (raw2[0] || {}) : (raw2 || {});
-    const totalEval = parseFloat(output2.tot_evlu_amt || output2.frcr_evlu_amt2 || 0);
-    document.querySelector('#balanceStat .stat-value').textContent = '₩' + totalEval.toLocaleString('ko-KR', {maximumFractionDigits: 0});
+    const isUS = '{{ account.market_type }}' === 'US';
+    if (isUS) {
+      const stockEval = parseFloat(data.frcr_evlu_amt2 || 0);
+      const cash = parseFloat(data.frcr_dncl_amt_2 || 0);
+      const totalUsd = stockEval + cash;
+      document.querySelector('#balanceStat .stat-value').textContent = '$' + totalUsd.toLocaleString('en-US', {maximumFractionDigits: 2});
+    } else {
+      const totalEval = parseFloat(output2.tot_evlu_amt || 0);
+      document.querySelector('#balanceStat .stat-value').textContent = '₩' + totalEval.toLocaleString('ko-KR', {maximumFractionDigits: 0});
+    }
 
     if (!items.length) {
       tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:24px">보유 종목이 없습니다</td></tr>';

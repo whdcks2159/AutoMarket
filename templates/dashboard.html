@@ -333,7 +333,9 @@ async function loadBalances() {
         const output2 = Array.isArray(data.output2) ? data.output2[0] : (data.output2 || {});
         const isUS = '{{ account.market_type }}' === 'US';
         if (isUS) {
-          const usd = parseFloat(data.frcr_dncl_amt_2 || output2.frcr_evlu_amt2 || 0);
+          const stockEval = parseFloat(data.frcr_evlu_amt2 || 0);
+          const cash = parseFloat(data.frcr_dncl_amt_2 || 0);
+          const usd = stockEval + cash;
           el.querySelector('div:last-child').textContent = '$' + usd.toLocaleString('en-US', {maximumFractionDigits: 2});
         } else {
           const krw = parseFloat(output2.dnca_tot_amt || 0);
