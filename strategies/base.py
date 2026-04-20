@@ -36,6 +36,7 @@ class BaseStrategy(ABC):
             event_type=event_type,
             new_strategy=self.name,
             message=f"[{self.name}] {message}",
+            created_at=_now_kst(),
         )
         db.session.add(log)
         db.session.commit()

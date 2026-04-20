@@ -149,7 +149,8 @@ async function loadHoldings() {
   try {
     const data = await apiFetch(`/api/accounts/${accountId}/balance`);
     const items = data.output1 || [];
-    const output2 = data.output2 || {};
+    const raw2 = data.output2;
+    const output2 = Array.isArray(raw2) ? (raw2[0] || {}) : (raw2 || {});
     const totalEval = parseFloat(output2.tot_evlu_amt || output2.frcr_evlu_amt2 || 0);
     document.querySelector('#balanceStat .stat-value').textContent = '₩' + totalEval.toLocaleString('ko-KR', {maximumFractionDigits: 0});
 

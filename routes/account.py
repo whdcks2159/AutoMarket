@@ -1,8 +1,16 @@
+import pytz
+from datetime import datetime
 from flask import Blueprint, request, jsonify, session, abort
 from models import db, Account, StrategyLog
 from kis_api import encrypt, decrypt, KISClient
 from routes.auth import login_required, current_user
 from strategies import STRATEGY_MAP
+
+_KST = pytz.timezone('Asia/Seoul')
+
+
+def _now_kst():
+    return datetime.now(_KST).replace(tzinfo=None)
 
 account_bp = Blueprint('account', __name__, url_prefix='/api/accounts')
 
@@ -135,6 +143,7 @@ def change_strategy(account_id):
         new_strategy=new_strategy,
         switch_mode=mode,
         message=f"전략 변경: {old_strategy} → {new_strategy} ({mode} 스위치)",
+        created_at=_now_kst(),
     )
     db.session.add(log)
     db.session.commit()
