@@ -82,7 +82,7 @@ class DualMomentumStrategy(BaseStrategy):
             try:
                 price_data = self.kis.get_price_us(target, excd)
                 price = float(price_data['output']['last'])
-                qty = int(self.account.investment_limit / price / 1350)  # KRW→USD 환산
+                qty = self._calc_qty(price, 'US', 1.0)
                 if qty > 0:
                     self.log_signal(f"매수: {target} {qty}주 @ ${price}")
                     result = self.kis.order_with_retry(target, 'BUY', qty, price, 'US', excd)

@@ -136,7 +136,7 @@ class BollingerBandStrategy(BaseStrategy):
                 return
             if self.already_bought_today(symbol):
                 return
-            qty = self.screener_qty(current_price) or self._calc_qty(current_price)
+            qty = self.screener_qty(current_price) or self._calc_qty(current_price, 'KR', 0.2)
             if qty > 0:
                 self.log_signal(f"매수 {symbol} | {sig['reason']} | 가격={current_price:,.0f}")
                 try:
@@ -153,8 +153,6 @@ class BollingerBandStrategy(BaseStrategy):
             except Exception as e:
                 self.record_trade(symbol, symbol, 'SELL', held_qty, current_price, error=str(e))
 
-    def _calc_qty(self, price: float) -> int:
-        return max(0, int(self.account.investment_limit * 0.2 / price))
 
 
 if __name__ == '__main__':

@@ -304,6 +304,20 @@ class KISClient:
 
         return holdings
 
+    def get_available_cash_kr(self) -> float:
+        """주문 가능 예수금 (원화)."""
+        if self.mock_mode:
+            return float(getattr(self.account, 'investment_limit', 0))
+        data = self.get_balance_kr()
+        return float(data.get('output2', {}).get('dnca_tot_amt', 0) or 0)
+
+    def get_available_cash_us(self) -> float:
+        """주문 가능 외화 예수금 (USD)."""
+        if self.mock_mode:
+            return float(getattr(self.account, 'investment_limit', 0)) / 1350
+        data = self.get_balance_us()
+        return float(data.get('frcr_dncl_amt_2', 0) or 0)
+
     # ─── 주문 ───────────────────────────────────────────────────────────────────
 
     def order_kr(self, symbol: str, side: str, quantity: int, price: int = 0) -> dict:

@@ -67,7 +67,7 @@ class GoldenRSIStrategy(BaseStrategy):
                     return
                 if self.already_bought_today(symbol):
                     return
-                qty = self.screener_qty(current_price) or self._calc_qty(current_price)
+                qty = self.screener_qty(current_price) or self._calc_qty(current_price, 'KR', 0.2)
                 if qty > 0:
                     self.log_signal(f"매수 시그널 {symbol} | 가격={current_price} RSI={rsi:.1f} SMA5={sma5:.0f} SMA20={sma20:.0f}")
                     try:
@@ -87,6 +87,3 @@ class GoldenRSIStrategy(BaseStrategy):
                 except Exception as e:
                     self.record_trade(symbol, symbol, 'SELL', held_qty, current_price, error=str(e))
 
-    def _calc_qty(self, price: float) -> int:
-        limit = self.account.investment_limit
-        return max(0, int(limit * 0.2 / price))  # 투자한도의 20%씩 분산

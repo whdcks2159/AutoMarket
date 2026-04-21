@@ -79,7 +79,7 @@ class VolatilityBreakoutStrategy(BaseStrategy):
                         break
                     if self.already_bought_today(symbol):
                         continue
-                    qty = self.screener_qty(current, 0.5) or self._calc_qty(current, 'KR')
+                    qty = self.screener_qty(current, 0.5) or self._calc_qty(current, 'KR', 0.5)
                     if qty > 0:
                         self.log_signal(f"변동성 돌파 매수 {symbol} | {current} >= 목표 {target_price:.0f} K={k}")
                         result = self.kis.order_with_retry(symbol, 'BUY', qty, current, 'KR')
@@ -123,7 +123,7 @@ class VolatilityBreakoutStrategy(BaseStrategy):
                         break
                     if self.already_bought_today(symbol):
                         continue
-                    qty = self.screener_qty(current, 0.5, 'US') or self._calc_qty(current, 'US')
+                    qty = self.screener_qty(current, 0.5, 'US') or self._calc_qty(current, 'US', 0.5)
                     if qty > 0:
                         self.log_signal(f"변동성 돌파 매수 {symbol} | ${current} >= 목표 ${target_price:.2f}")
                         result = self.kis.order_with_retry(symbol, 'BUY', qty, current, 'US', excd)
@@ -197,9 +197,3 @@ class VolatilityBreakoutStrategy(BaseStrategy):
             self.log_signal(f"미국 잔고 조회 실패: {e}", event_type='ERROR')
             return {}
 
-    def _calc_qty(self, price: float, market: str) -> int:
-        limit = self.account.investment_limit
-        if market == 'US':
-            limit_usd = limit / 1350
-            return max(0, int(limit_usd * 0.5 / price))
-        return max(0, int(limit * 0.5 / price))

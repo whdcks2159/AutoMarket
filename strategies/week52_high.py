@@ -57,7 +57,7 @@ class Week52HighStrategy(BaseStrategy):
                 return
             if self.already_bought_today(symbol):
                 return
-            qty = self.screener_qty(current, 0.3) or self._calc_qty(current, 'KR')
+            qty = self.screener_qty(current, 0.3) or self._calc_qty(current, 'KR', 0.3)
             if qty > 0:
                 self.log_signal(f"52주 신고가 돌파 매수 {symbol} | 현재={current} 신고가={week52_high:.0f}")
                 try:
@@ -66,7 +66,7 @@ class Week52HighStrategy(BaseStrategy):
                 except Exception as e:
                     self.record_trade(symbol, symbol, 'BUY', qty, current, error=str(e))
             else:
-                self.log_signal(f"매수 스킵 {symbol} | 잔고 부족 (현재={current:,.0f}원, 투자한도={self.account.investment_limit:,.0f}원 × 30% = {self.account.investment_limit * 0.3:,.0f}원 < 1주)")
+                self.log_signal(f"매수 스킵 {symbol} | 잔고 부족 (현재={current:,.0f}원, 1주 매수 불가)")
         elif held_qty == 0:
             self.log_signal(f"조건 미달 {symbol} | 현재={current:,.0f} 52주신고가={week52_high:,.0f} ({current/week52_high*100:.1f}%)")
 
@@ -105,7 +105,7 @@ class Week52HighStrategy(BaseStrategy):
                 return
             if self.already_bought_today(symbol):
                 return
-            qty = self.screener_qty(current, 0.3, 'US') or self._calc_qty(current, 'US')
+            qty = self.screener_qty(current, 0.3, 'US') or self._calc_qty(current, 'US', 0.3)
             if qty > 0:
                 self.log_signal(f"52주 신고가 돌파 매수 {symbol} | ${current} 신고가=${week52_high:.2f}")
                 try:
@@ -114,7 +114,7 @@ class Week52HighStrategy(BaseStrategy):
                 except Exception as e:
                     self.record_trade(symbol, symbol, 'BUY', qty, current, error=str(e))
             else:
-                self.log_signal(f"매수 스킵 {symbol} | 잔고 부족 (현재=${current:.2f}, 투자한도 환산=${self.account.investment_limit/1350:.0f} × 30% = ${self.account.investment_limit*0.3/1350:.0f} < 1주)")
+                self.log_signal(f"매수 스킵 {symbol} | 잔고 부족 (현재=${current:.2f}, 1주 매수 불가)")
         elif held_qty == 0:
             self.log_signal(f"조건 미달 {symbol} | 현재=${current:.2f} 52주신고가=${week52_high:.2f} ({current/week52_high*100:.1f}%)")
 
@@ -152,9 +152,3 @@ class Week52HighStrategy(BaseStrategy):
             self.log_signal(f"평균단가 조회 실패 {symbol}: {e}", event_type='ERROR')
         return 0.0
 
-    def _calc_qty(self, price: float, market: str) -> int:
-        limit = self.account.investment_limit
-        if market == 'US':
-            limit_usd = limit / 1350
-            return max(0, int(limit_usd * 0.3 / price))
-        return max(0, int(limit * 0.3 / price))

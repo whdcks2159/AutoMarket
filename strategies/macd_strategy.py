@@ -194,7 +194,7 @@ class MACDStrategy(BaseStrategy):
                 return
             if self.already_bought_today(symbol):
                 return
-            qty = self.screener_qty(price, market=market) or self._calc_qty(price, market)
+            qty = self.screener_qty(price, market=market) or self._calc_qty(price, market, 0.2)
             if qty > 0:
                 self.log_signal(f"매수 {symbol} | {sig['reason']} | 가격={price}")
                 try:
@@ -211,11 +211,6 @@ class MACDStrategy(BaseStrategy):
             except Exception as e:
                 self.record_trade(symbol, symbol, 'SELL', held_qty, price, error=str(e))
 
-    def _calc_qty(self, price: float, market: str) -> int:
-        limit = self.account.investment_limit
-        if market == 'US':
-            return max(0, int(limit / 1350 * 0.2 / price))
-        return max(0, int(limit * 0.2 / price))
 
 
 if __name__ == '__main__':

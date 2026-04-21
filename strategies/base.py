@@ -132,6 +132,23 @@ class BaseStrategy(ABC):
                 .filter(Trade.executed_at >= today_start)
                 .count()) > 0
 
+    def _calc_qty(self, price: float, market: str = 'KR', ratio: float = 0.3) -> int:
+        """실제 예수금과 investment_limit 중 작은 값으로 수량 계산."""
+        try:
+            if market == 'KR':
+                cash = self.kis.get_available_cash_kr()
+                limit = min(cash, self.account.investment_limit)
+                return max(0, int(limit * ratio / price))
+            else:
+                cash_usd = self.kis.get_available_cash_us()
+                limit_usd = min(cash_usd, self.account.investment_limit / 1350)
+                return max(0, int(limit_usd * ratio / price))
+        except Exception as e:
+            logger.warning("잔고 조회 실패, investment_limit으로 fallback: %s", e)
+            if market == 'US':
+                return max(0, int(self.account.investment_limit / 1350 * ratio / price))
+            return max(0, int(self.account.investment_limit * ratio / price))
+
     def screener_qty(self, price: float, ratio: float = 1.0, market: str = 'KR') -> int:
         """스크리너 활성화 시 per_symbol_limit 적용, 미활성 시 None 반환."""
         if not getattr(self.account, 'screener_enabled', False):

@@ -212,7 +212,7 @@ class TurtleTradingStrategy(BaseStrategy):
                 return
             qty = (self.screener_qty(price, market=market)
                    or sig['position_size']
-                   or self._calc_qty(price, market))
+                   or self._calc_qty(price, market, 0.2))
             if qty > 0:
                 self.log_signal(f"매수 {symbol} | {sig['reason']} | ATR={sig['atr']:,.0f}")
                 try:
@@ -229,11 +229,6 @@ class TurtleTradingStrategy(BaseStrategy):
             except Exception as e:
                 self.record_trade(symbol, symbol, 'SELL', held_qty, price, error=str(e))
 
-    def _calc_qty(self, price: float, market: str) -> int:
-        limit = self.account.investment_limit
-        if market == 'US':
-            return max(0, int(limit / 1350 * 0.2 / price))
-        return max(0, int(limit * 0.2 / price))
 
 
 if __name__ == '__main__':
