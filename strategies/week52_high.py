@@ -65,6 +65,10 @@ class Week52HighStrategy(BaseStrategy):
                     self.record_trade(symbol, symbol, 'BUY', qty, current, result)
                 except Exception as e:
                     self.record_trade(symbol, symbol, 'BUY', qty, current, error=str(e))
+            else:
+                self.log_signal(f"매수 스킵 {symbol} | 잔고 부족 (현재={current:,.0f}원, 투자한도={self.account.investment_limit:,.0f}원 × 30% = {self.account.investment_limit * 0.3:,.0f}원 < 1주)")
+        elif held_qty == 0:
+            self.log_signal(f"조건 미달 {symbol} | 현재={current:,.0f} 52주신고가={week52_high:,.0f} ({current/week52_high*100:.1f}%)")
 
         elif held_qty > 0:
             buy_price = self._get_avg_buy_price_kr(symbol, holdings)
@@ -109,6 +113,10 @@ class Week52HighStrategy(BaseStrategy):
                     self.record_trade(symbol, symbol, 'BUY', qty, current, result)
                 except Exception as e:
                     self.record_trade(symbol, symbol, 'BUY', qty, current, error=str(e))
+            else:
+                self.log_signal(f"매수 스킵 {symbol} | 잔고 부족 (현재=${current:.2f}, 투자한도 환산=${self.account.investment_limit/1350:.0f} × 30% = ${self.account.investment_limit*0.3/1350:.0f} < 1주)")
+        elif held_qty == 0:
+            self.log_signal(f"조건 미달 {symbol} | 현재=${current:.2f} 52주신고가=${week52_high:.2f} ({current/week52_high*100:.1f}%)")
 
         elif held_qty > 0 and current < sma20:
             self.log_signal(f"20일선 이탈 매도 {symbol} | ${current} SMA20=${sma20:.2f}")
