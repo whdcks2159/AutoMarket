@@ -54,6 +54,17 @@ def run_all_active_strategies(strategy_name: str):
             run_strategy_for_account(account.id, strategy_name)
 
 
+def run_all_active_strategies_market(strategy_name: str, market: str):
+    from app import app
+    with app.app_context():
+        from models import Account
+        accounts = Account.query.filter_by(
+            strategy=strategy_name, is_active=True, market_type=market
+        ).all()
+        for account in accounts:
+            run_strategy_for_account(account.id, strategy_name)
+
+
 def run_screener_for_account(account_id: int, strategy_name: str, market: str):
     """스크리너 활성화된 계좌에 대해 종목 스캔 실행."""
     from app import app
@@ -169,7 +180,8 @@ def job_morning_kr():
         logger.warning("오늘은 휴장일 — 아침 매매 스킵")
         return
     logger.warning("아침 스캔+매수 시작 (국내주)")
-    for strategy in ('golden_rsi', 'week52_high', 'volatility_breakout'):
+    for strategy in ('golden_rsi', 'week52_high', 'volatility_breakout',
+                     'bollinger_band', 'macd', 'turtle_trading'):
         run_all_morning_trade_kr(strategy)
 
 
@@ -219,6 +231,55 @@ def job_volatility_breakout():
     run_all_active_strategies('volatility_breakout')
 
 
+def job_bollinger_close():
+    if not is_trading_day_kr():
+        return
+    logger.info("볼린저 밴드 장 마감 체크")
+    run_all_active_strategies_market('bollinger_band', 'KR')
+
+
+def job_macd_kr_close():
+    if not is_trading_day_kr():
+        return
+    logger.info("MACD 장 마감 체크 (국내주)")
+    run_all_active_strategies_market('macd', 'KR')
+
+
+def job_turtle_kr_close():
+    if not is_trading_day_kr():
+        return
+    logger.info("터틀 트레이딩 장 마감 체크 (국내주)")
+    run_all_active_strategies_market('turtle_trading', 'KR')
+
+
+def job_value_investing_monthly():
+    """매월 첫 거래일 08:50 — 가치투자 월간 리밸런싱."""
+    now = datetime.now(KST)
+    if now.day > 7:
+        return
+    first_trading = None
+    for day in range(1, 8):
+        d = now.replace(day=day)
+        if d.weekday() < 5:
+            first_trading = d.day
+            break
+    if now.day != first_trading:
+        return
+    if not is_trading_day_kr():
+        return
+    logger.info("가치투자 월간 리밸런싱 실행")
+    run_all_active_strategies_market('value_investing', 'KR')
+
+
+def job_macd_turtle_us():
+    """23:30 — MACD / 터틀 트레이딩 미국주 전략."""
+    if not is_trading_day_us():
+        return
+    logger.info("MACD/터틀 미국주 전략 실행")
+    run_all_active_strategies_market('macd', 'US')
+    run_all_active_strategies_market('turtle_trading', 'US')
+
+
 def job_dual_momentum():
     now = datetime.now(KST)
     # 매월 첫 거래일 체크
@@ -249,9 +310,12 @@ def create_scheduler() -> BackgroundScheduler:
     # 국내주 아침: 09:00 전체 스캔+매수 (골든RSI, 52주 신고가)
     scheduler.add_job(job_morning_kr, CronTrigger(hour=9, minute=0, timezone=KST), id='morning_kr')
 
-    # 국내주 장 마감: 15:20 매도 체크 (골든RSI, 52주 신고가)
+    # 국내주 장 마감: 15:20 매도 체크
     scheduler.add_job(job_golden_rsi, CronTrigger(hour=15, minute=20, timezone=KST), id='golden_rsi_close')
     scheduler.add_job(job_week52_high, CronTrigger(hour=15, minute=20, timezone=KST), id='week52_close')
+    scheduler.add_job(job_bollinger_close, CronTrigger(hour=15, minute=20, timezone=KST), id='bollinger_close')
+    scheduler.add_job(job_macd_kr_close, CronTrigger(hour=15, minute=20, timezone=KST), id='macd_kr_close')
+    scheduler.add_job(job_turtle_kr_close, CronTrigger(hour=15, minute=20, timezone=KST), id='turtle_kr_close')
 
     # 변동성 돌파: 5분마다 09:00~15:30
     scheduler.add_job(
@@ -262,6 +326,12 @@ def create_scheduler() -> BackgroundScheduler:
 
     # 듀얼 모멘텀: 매월 첫 거래일 23:30
     scheduler.add_job(job_dual_momentum, CronTrigger(hour=23, minute=30, timezone=KST), id='dual_momentum')
+
+    # MACD / 터틀 미국주: 23:30
+    scheduler.add_job(job_macd_turtle_us, CronTrigger(hour=23, minute=30, timezone=KST), id='macd_turtle_us')
+
+    # 가치투자: 매월 첫 거래일 08:50
+    scheduler.add_job(job_value_investing_monthly, CronTrigger(hour=8, minute=50, timezone=KST), id='value_investing_monthly')
 
     # 미국주 스크리너: 23:00
     scheduler.add_job(job_screener_us_morning, CronTrigger(hour=23, minute=0, timezone=KST), id='screener_us_morning')
