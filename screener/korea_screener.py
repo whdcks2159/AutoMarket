@@ -98,7 +98,7 @@ class KoreaScreener:
         """거래량 순위 API로 후보 종목 수집 후 1차 필터 적용."""
         if symbols_override:
             # 직접 지정 종목 목록 — 추가 필터 없이 통과
-            return [{'symbol': s, 'volume': 0, 'mktcap': 9999, 'name': s}
+            return [{'symbol': s, 'volume': 0, 'mktcap': 9999, 'name': ''}
                     for s in symbols_override]
 
         targets = (getattr(self.account, 'screener_targets', None) or 'KOSPI,KOSDAQ').split(',')
