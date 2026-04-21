@@ -16,6 +16,18 @@
     --purple: #a855f7;
     --purple-dim: rgba(168,85,247,.12);
     --purple-border: rgba(168,85,247,.35);
+    --teal: #14b8a6;
+    --teal-dim: rgba(20,184,166,.12);
+    --teal-border: rgba(20,184,166,.35);
+    --sky: #0ea5e9;
+    --sky-dim: rgba(14,165,233,.12);
+    --sky-border: rgba(14,165,233,.35);
+    --rose: #f43f5e;
+    --rose-dim: rgba(244,63,94,.12);
+    --rose-border: rgba(244,63,94,.35);
+    --amber: #f59e0b;
+    --amber-dim: rgba(245,158,11,.12);
+    --amber-border: rgba(245,158,11,.35);
   }
 
   /* ── HERO ── */
@@ -71,6 +83,14 @@
   .s-card.orange:hover { box-shadow: 0 8px 36px rgba(249,115,22,.2); }
   .s-card.purple { border-color: var(--purple-border); }
   .s-card.purple:hover { box-shadow: 0 8px 36px rgba(168,85,247,.2); }
+  .s-card.teal   { border-color: var(--teal-border); }
+  .s-card.teal:hover   { box-shadow: 0 8px 36px rgba(20,184,166,.2); }
+  .s-card.sky    { border-color: var(--sky-border); }
+  .s-card.sky:hover    { box-shadow: 0 8px 36px rgba(14,165,233,.2); }
+  .s-card.rose   { border-color: var(--rose-border); }
+  .s-card.rose:hover   { box-shadow: 0 8px 36px rgba(244,63,94,.2); }
+  .s-card.amber  { border-color: var(--amber-border); }
+  .s-card.amber:hover  { box-shadow: 0 8px 36px rgba(245,158,11,.2); }
 
   .s-header { padding: 22px 26px 18px; display: flex; align-items: flex-start; gap: 16px; flex-wrap: wrap; }
   .s-header-left { flex: 1; }
@@ -88,6 +108,14 @@
   .badge-orange { background: var(--orange-dim); color: var(--orange); border-color: var(--orange-border); }
   .badge-purple { background: var(--purple-dim); color: var(--purple); border-color: var(--purple-border); }
   .badge-star   { background: rgba(245,158,11,.15); color: #f59e0b; border-color: rgba(245,158,11,.3); }
+  .badge-teal   { background: var(--teal-dim);   color: var(--teal);   border-color: var(--teal-border); }
+  .badge-sky    { background: var(--sky-dim);    color: var(--sky);    border-color: var(--sky-border); }
+  .badge-rose   { background: var(--rose-dim);   color: var(--rose);   border-color: var(--rose-border); }
+  .badge-amber  { background: var(--amber-dim);  color: var(--amber);  border-color: var(--amber-border); }
+  .pill-teal    { background: var(--teal-dim);   color: var(--teal); }
+  .pill-sky     { background: var(--sky-dim);    color: var(--sky); }
+  .pill-rose    { background: var(--rose-dim);   color: var(--rose); }
+  .pill-amber   { background: var(--amber-dim);  color: var(--amber); }
 
   .s-chart-wrap { height: 120px; padding: 0 26px; }
 
@@ -192,7 +220,7 @@
 <div class="hero">
   <div class="hero-eyebrow"><i class="fa-solid fa-flask-vial"></i> 논문 · 실증 데이터 기반</div>
   <h1>투자 전략 <em>가이드</em></h1>
-  <p>논문과 실증 데이터를 기반으로 검증된 4가지 퀀트 전략</p>
+  <p>논문과 실증 데이터를 기반으로 검증된 8가지 퀀트 전략</p>
 </div>
 
 <!-- COMPARE TABLE -->
@@ -233,6 +261,34 @@
           <td><span class="pill pill-mid">중간</span></td>
           <td><span class="pill pill-high">높음</span></td>
           <td>어려움</td>
+        </tr>
+        <tr>
+          <td><span class="pill pill-teal">볼린저 밴드</span></td>
+          <td>변동성 추적형</td><td>매일</td>
+          <td><span class="pill pill-mid">중간</span></td>
+          <td><span class="pill pill-mid">중간</span></td>
+          <td>보통</td>
+        </tr>
+        <tr>
+          <td><span class="pill pill-sky">MACD</span></td>
+          <td>추세 추종형</td><td>매일</td>
+          <td><span class="pill pill-mid">중간</span></td>
+          <td><span class="pill pill-mid">중간</span></td>
+          <td>보통</td>
+        </tr>
+        <tr>
+          <td><span class="pill pill-rose">터틀 트레이딩</span></td>
+          <td>추세 추종형</td><td>매일</td>
+          <td><span class="pill pill-high">높음</span></td>
+          <td><span class="pill pill-mid">중간</span></td>
+          <td>보통</td>
+        </tr>
+        <tr>
+          <td><span class="pill pill-amber">PER/PBR 가치투자</span></td>
+          <td>장기 가치형</td><td>매월</td>
+          <td><span class="pill pill-high">높음</span></td>
+          <td><span class="pill pill-low">낮음</span></td>
+          <td>쉬움</td>
         </tr>
       </tbody>
     </table>
@@ -595,6 +651,321 @@
       </div>
     </div>
 
+    <!-- 전략 5: 볼린저 밴드 -->
+    <div class="s-card teal">
+      <div class="s-header">
+        <div class="s-header-left">
+          <div class="s-num" style="color:var(--teal)">전략 05</div>
+          <div class="s-title">볼린저 밴드</div>
+          <div class="s-tagline">20일 이동평균 ± 2σ 밴드로 과매도/과매수 구간을 포착하는 변동성 추적 전략</div>
+          <div class="s-badges">
+            <span class="badge badge-teal"><i class="fa-solid fa-wave-square"></i> 변동성 추적형</span>
+            <span class="badge badge-teal">국내주</span>
+            <span class="badge badge-teal">중립형</span>
+          </div>
+        </div>
+      </div>
+      <div class="s-chart-wrap"><canvas id="chart5"></canvas></div>
+      <button class="s-toggle-btn" onclick="toggleCard(this)" aria-expanded="false">
+        <span>자세히 보기</span>
+        <i class="fa-solid fa-chevron-down s-toggle-icon"></i>
+      </button>
+      <div class="s-body">
+        <div>
+          <div class="s-section-label">작동 원리</div>
+          <ul class="s-rule-list">
+            <li><i class="fa-solid fa-calculator icon" style="color:var(--teal)"></i><span><strong>밴드 계산:</strong> 중간선(20일 MA) ± 2 × 표준편차</span></li>
+            <li><i class="fa-solid fa-circle-up icon icon-buy"></i><span><strong>매수:</strong> %B &lt; 0.05 (하단 밴드 근접/이탈) → 과매도 반등 기대</span></li>
+            <li><i class="fa-solid fa-circle-down icon icon-sell"></i><span><strong>매도:</strong> %B &gt; 0.95 (상단 밴드 근접/이탈) → 과매수 조정 예상</span></li>
+            <li><i class="fa-solid fa-chart-bar icon" style="color:var(--teal)"></i><span>거래량 2배 이상 급증 시 신호 강도 상향 판정</span></li>
+          </ul>
+        </div>
+        <div>
+          <div class="s-section-label">매매 예시</div>
+          <div class="s-scenario" style="background:rgba(20,184,166,.06);border-color:rgba(20,184,166,.2)">
+            <p style="font-size:.82rem;color:var(--text-muted);line-height:1.7">
+              <strong style="color:var(--text)">📐 밴드:</strong> 삼성전자 중간선 7만원, 하단 6.6만원, 상단 7.4만원<br>
+              <strong style="color:var(--text)">📈 매수:</strong> 현재가 6.65만원 → %B=0.04 (하단 근접) → 매수<br>
+              <strong style="color:var(--text)">📉 매도:</strong> 반등 후 7.35만원 → %B=0.96 (상단 근접) → 매도
+            </p>
+          </div>
+        </div>
+        <div class="s-research">
+          <div class="s-section-label"><i class="fa-solid fa-book-open" style="color:var(--teal);margin-right:4px"></i> 논문 / 연구 근거</div>
+          <div class="research-item">
+            <span class="research-icon">📊</span>
+            <span style="color:var(--text-muted)">John Bollinger (1983) — 볼린저 밴드 개발: <em>"국내 시스템 트레이더 백테스트에서 꾸준한 수익을 내는 기법 중 하나"</em></span>
+          </div>
+          <div class="research-item">
+            <span class="research-icon">📄</span>
+            <span style="color:var(--text-muted)">변동성 수축(밴드 폭 좁아짐) 이후 확장 국면에서 추세 돌파 신호로 활용 가능 — 단독보다 RSI·거래량 결합 시 성과 개선</span>
+          </div>
+        </div>
+        <div class="s-pros-cons">
+          <div class="pros-box">
+            <div class="s-section-label">장점</div>
+            <ul class="check-list">
+              <li><span>✓</span><span>과매도/과매수 구간을 수치로 정량화</span></li>
+              <li><span>✓</span><span>시장 변동성에 따라 밴드가 자동 조절</span></li>
+              <li><span>✓</span><span>거래량 필터로 허위 신호 축소</span></li>
+            </ul>
+          </div>
+          <div class="cons-box">
+            <div class="s-section-label">단점</div>
+            <ul class="check-list">
+              <li><span>✗</span><span>강한 추세장에서 상단 이탈 후 계속 상승 가능</span></li>
+              <li><span>✗</span><span>횡보장에서 잦은 매매 신호 발생</span></li>
+              <li><span>✗</span><span>종목별 최적 파라미터가 다름</span></li>
+            </ul>
+          </div>
+        </div>
+        <div class="s-target">
+          <div class="target-box">
+            <i class="fa-solid fa-user-check" style="color:var(--teal)"></i>
+            <span style="font-size:.875rem;color:var(--text-muted)"><strong style="color:var(--text)">이런 분께 추천:</strong> 박스권·횡보 시장을 주로 거래하는 분, 기술적 분석에 관심 있는 분</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 전략 6: MACD -->
+    <div class="s-card sky">
+      <div class="s-header">
+        <div class="s-header-left">
+          <div class="s-num" style="color:var(--sky)">전략 06</div>
+          <div class="s-title">MACD</div>
+          <div class="s-tagline">12/26일 지수이동평균 차이로 추세 전환을 포착하는 가장 널리 쓰이는 모멘텀 지표</div>
+          <div class="s-badges">
+            <span class="badge badge-sky"><i class="fa-solid fa-arrow-trend-up"></i> 추세 추종형</span>
+            <span class="badge badge-sky">국내/미국주</span>
+            <span class="badge badge-sky">범용 전략</span>
+          </div>
+        </div>
+      </div>
+      <div class="s-chart-wrap"><canvas id="chart6"></canvas></div>
+      <button class="s-toggle-btn" onclick="toggleCard(this)" aria-expanded="false">
+        <span>자세히 보기</span>
+        <i class="fa-solid fa-chevron-down s-toggle-icon"></i>
+      </button>
+      <div class="s-body">
+        <div>
+          <div class="s-section-label">작동 원리</div>
+          <ul class="s-rule-list">
+            <li><i class="fa-solid fa-calculator icon" style="color:var(--sky)"></i><span><strong>MACD선</strong> = 12일 EMA − 26일 EMA</span></li>
+            <li><i class="fa-solid fa-minus icon" style="color:var(--sky)"></i><span><strong>시그널선</strong> = MACD선의 9일 EMA</span></li>
+            <li><i class="fa-solid fa-circle-up icon icon-buy"></i><span><strong>매수:</strong> MACD가 시그널선 상향 돌파 + 히스토그램 양전환</span></li>
+            <li><i class="fa-solid fa-circle-up icon icon-buy"></i><span><strong>강화 매수:</strong> 제로선 아래에서 골든크로스 발생 시</span></li>
+            <li><i class="fa-solid fa-circle-down icon icon-sell"></i><span><strong>매도:</strong> MACD가 시그널선 하향 돌파(데드크로스)</span></li>
+          </ul>
+        </div>
+        <div>
+          <div class="s-section-label">매매 예시</div>
+          <div class="s-scenario" style="background:rgba(14,165,233,.06);border-color:rgba(14,165,233,.2)">
+            <p style="font-size:.82rem;color:var(--text-muted);line-height:1.7">
+              <strong style="color:var(--text)">📈 매수:</strong> MACD선(-150)이 시그널선(-200) 상향 돌파 → 히스토그램 양전환 → 강화 매수<br>
+              <strong style="color:var(--text)">📉 매도:</strong> MACD선(+300)이 시그널선(+350) 하향 돌파 → 데드크로스 → 매도
+            </p>
+          </div>
+        </div>
+        <div class="s-research">
+          <div class="s-section-label"><i class="fa-solid fa-book-open" style="color:var(--sky);margin-right:4px"></i> 논문 / 연구 근거</div>
+          <div class="research-item">
+            <span class="research-icon">📊</span>
+            <span style="color:var(--text-muted)">Gerald Appel (1979) 개발 — 전 세계 트레이더·기관투자자가 표준 지표로 채택, 수십 년간 실전 검증</span>
+          </div>
+          <div class="research-item">
+            <span class="research-icon">📄</span>
+            <span style="color:var(--text-muted)">추세 추종 지표 중 신호 빈도와 신뢰도의 균형이 좋음 — RSI, 볼린저 밴드와 상호 보완적으로 활용 가능</span>
+          </div>
+        </div>
+        <div class="s-pros-cons">
+          <div class="pros-box">
+            <div class="s-section-label">장점</div>
+            <ul class="check-list">
+              <li><span>✓</span><span>추세 전환 시점 포착에 효과적</span></li>
+              <li><span>✓</span><span>국내·미국 양쪽 시장 모두 적용 가능</span></li>
+              <li><span>✓</span><span>제로선 위치로 추세 강도 파악 가능</span></li>
+            </ul>
+          </div>
+          <div class="cons-box">
+            <div class="s-section-label">단점</div>
+            <ul class="check-list">
+              <li><span>✗</span><span>후행 지표 — 신호가 늦게 발생</span></li>
+              <li><span>✗</span><span>횡보장에서 허위 신호 빈번</span></li>
+              <li><span>✗</span><span>최소 35일 이상 데이터 필요</span></li>
+            </ul>
+          </div>
+        </div>
+        <div class="s-target">
+          <div class="target-box">
+            <i class="fa-solid fa-user-check" style="color:var(--sky)"></i>
+            <span style="font-size:.875rem;color:var(--text-muted)"><strong style="color:var(--text)">이런 분께 추천:</strong> 추세 추종을 선호하는 분, 국내·미국 주식 모두 자동화하고 싶은 분</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 전략 7: 터틀 트레이딩 -->
+    <div class="s-card rose">
+      <div class="s-header">
+        <div class="s-header-left">
+          <div class="s-num" style="color:var(--rose)">전략 07</div>
+          <div class="s-title">터틀 트레이딩</div>
+          <div class="s-tagline">리처드 데니스가 1983년 실험으로 증명한 규칙 기반 추세 추종 시스템</div>
+          <div class="s-badges">
+            <span class="badge badge-rose"><i class="fa-solid fa-chess-rook"></i> 시스템 트레이딩</span>
+            <span class="badge badge-rose">국내/미국주</span>
+            <span class="badge badge-rose">추세 추종</span>
+          </div>
+        </div>
+      </div>
+      <div class="s-chart-wrap"><canvas id="chart7"></canvas></div>
+      <button class="s-toggle-btn" onclick="toggleCard(this)" aria-expanded="false">
+        <span>자세히 보기</span>
+        <i class="fa-solid fa-chevron-down s-toggle-icon"></i>
+      </button>
+      <div class="s-body">
+        <div>
+          <div class="s-section-label">작동 원리</div>
+          <ul class="s-rule-list">
+            <li><i class="fa-solid fa-circle-up icon icon-buy"></i><span><strong>시스템1 매수:</strong> 20일 신고가 돌파 → 매수 진입</span></li>
+            <li><i class="fa-solid fa-circle-up icon icon-buy"></i><span><strong>시스템2 매수:</strong> 55일 신고가 돌파 → 더 강한 신호</span></li>
+            <li><i class="fa-solid fa-circle-down icon icon-sell"></i><span><strong>청산:</strong> 10일 신저가 이탈 → 매도</span></li>
+            <li><i class="fa-solid fa-sliders icon" style="color:var(--rose)"></i><span><strong>포지션 사이징:</strong> ATR(14일) 기반 — 자본의 2% 위험 한도</span></li>
+            <li><i class="fa-solid fa-shield icon" style="color:var(--rose)"></i><span><strong>손절:</strong> 매수가 − 2 × ATR 이탈 시 자동 손절</span></li>
+          </ul>
+        </div>
+        <div>
+          <div class="s-section-label">매매 예시</div>
+          <div class="s-scenario" style="background:rgba(244,63,94,.06);border-color:rgba(244,63,94,.2)">
+            <p style="font-size:.82rem;color:var(--text-muted);line-height:1.7">
+              <strong style="color:var(--text)">📈 매수:</strong> 삼성전자 20일 최고가(8.2만원) 돌파 → 진입<br>
+              <strong style="color:var(--text)">📐 손절:</strong> ATR=2,000원 → 손절가 = 8.2만 − 4,000원 = 7.8만원<br>
+              <strong style="color:var(--text)">📉 청산:</strong> 10일 신저가 하향 이탈 시 보유분 전체 매도
+            </p>
+          </div>
+        </div>
+        <div class="s-research">
+          <div class="s-section-label"><i class="fa-solid fa-book-open" style="color:var(--rose);margin-right:4px"></i> 논문 / 연구 근거</div>
+          <div class="research-item">
+            <span class="research-icon">🐢</span>
+            <span style="color:var(--text-muted)">Richard Dennis (1983): <em>"트레이더는 만들어질 수 있다"</em> — 비전문가 14명을 터틀로 훈련, 5년 내 총 1억 달러 수익 달성</span>
+          </div>
+          <div class="research-item">
+            <span class="research-icon">📊</span>
+            <span style="color:var(--text-muted)">ATR 기반 포지션 사이징은 현대 퀀트 운용의 표준 리스크 관리 기법으로 정착</span>
+          </div>
+        </div>
+        <div class="s-pros-cons">
+          <div class="pros-box">
+            <div class="s-section-label">장점</div>
+            <ul class="check-list">
+              <li><span>✓</span><span>완전한 규칙 기반 — 감정 배제</span></li>
+              <li><span>✓</span><span>ATR 포지션 사이징으로 리스크 정밀 제어</span></li>
+              <li><span>✓</span><span>강한 추세에서 높은 수익 잠재력</span></li>
+            </ul>
+          </div>
+          <div class="cons-box">
+            <div class="s-section-label">단점</div>
+            <ul class="check-list">
+              <li><span>✗</span><span>횡보·박스권에서 잦은 손절</span></li>
+              <li><span>✗</span><span>신호 발생 빈도 낮아 기다림 필요</span></li>
+              <li><span>✗</span><span>추세 초반 진입 어려움 (고점 근처 매수)</span></li>
+            </ul>
+          </div>
+        </div>
+        <div class="s-target">
+          <div class="target-box">
+            <i class="fa-solid fa-user-check" style="color:var(--rose)"></i>
+            <span style="font-size:.875rem;color:var(--text-muted)"><strong style="color:var(--text)">이런 분께 추천:</strong> 규칙 기반 시스템 트레이딩을 원하는 분, 강한 추세장에서 수익을 극대화하고 싶은 분</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 전략 8: PER/PBR 가치투자 -->
+    <div class="s-card amber">
+      <div class="s-header">
+        <div class="s-header-left">
+          <div class="s-num" style="color:var(--amber)">전략 08</div>
+          <div class="s-title">PER/PBR 가치투자</div>
+          <div class="s-tagline">저PER·저PBR·고ROE 조건으로 저평가 우량주를 발굴하는 워런 버핏식 월간 리밸런싱 전략</div>
+          <div class="s-badges">
+            <span class="badge badge-amber"><i class="fa-solid fa-gem"></i> 가치투자형</span>
+            <span class="badge badge-amber">국내주</span>
+            <span class="badge badge-amber">월간 리밸런싱</span>
+            <span class="badge badge-star">⭐ 장기 추천</span>
+          </div>
+        </div>
+      </div>
+      <div class="s-chart-wrap"><canvas id="chart8"></canvas></div>
+      <button class="s-toggle-btn" onclick="toggleCard(this)" aria-expanded="false">
+        <span>자세히 보기</span>
+        <i class="fa-solid fa-chevron-down s-toggle-icon"></i>
+      </button>
+      <div class="s-body">
+        <div>
+          <div class="s-section-label">작동 원리</div>
+          <ul class="s-rule-list">
+            <li><i class="fa-solid fa-circle-up icon icon-buy"></i><span><strong>매수 조건:</strong> PER ≤ 10 + PBR ≤ 1.0 + ROE ≥ 10% → 저평가 우량주</span></li>
+            <li><i class="fa-solid fa-calculator icon" style="color:var(--amber)"></i><span><strong>내재가치:</strong> BPS × 적정 PBR(1.5) = 목표가</span></li>
+            <li><i class="fa-solid fa-circle-down icon icon-sell"></i><span><strong>목표 달성 매도:</strong> 현재가가 내재가치(BPS × 1.5) 도달 시</span></li>
+            <li><i class="fa-solid fa-circle-down icon icon-sell"></i><span><strong>손절:</strong> 매수가 대비 −15% 하락 시</span></li>
+            <li><i class="fa-solid fa-rotate icon" style="color:var(--amber)"></i><span>매월 첫 거래일 자동 스크리닝 + 리밸런싱</span></li>
+          </ul>
+        </div>
+        <div>
+          <div class="s-section-label">매매 예시</div>
+          <div class="s-scenario" style="background:rgba(245,158,11,.06);border-color:rgba(245,158,11,.2)">
+            <p style="font-size:.82rem;color:var(--text-muted);line-height:1.7">
+              <strong style="color:var(--text)">✅ 매수:</strong> 기아 PER=5.2, PBR=0.8, ROE=15% → 3가지 조건 충족 → 매수<br>
+              <strong style="color:var(--text)">🎯 목표가:</strong> BPS 6만원 × 1.5 = 9만원 → 현재가 도달 시 매도<br>
+              <strong style="color:var(--text)">🛑 손절:</strong> 매수가 대비 -15% 하락 시 자동 매도
+            </p>
+          </div>
+        </div>
+        <div class="s-research">
+          <div class="s-section-label"><i class="fa-solid fa-book-open" style="color:var(--amber);margin-right:4px"></i> 논문 / 연구 근거</div>
+          <div class="research-item">
+            <span class="research-icon">💼</span>
+            <span style="color:var(--text-muted)">Benjamin Graham &amp; Warren Buffett — 저PBR 가치주의 장기 초과 수익 입증, 수십 년 실전 검증</span>
+          </div>
+          <div class="research-item">
+            <span class="research-icon">📊</span>
+            <span style="color:var(--text-muted)">Fama &amp; French (1992): <em>"저PBR 포트폴리오는 장기적으로 시장 수익률 초과"</em> — 3요인 모델 핵심 팩터</span>
+          </div>
+          <div class="research-item">
+            <span class="research-icon">🇰🇷</span>
+            <span style="color:var(--text-muted)">국내 코스피 저PBR 특수: 한국 증시는 PBR 1.0 이하 종목 비중이 높아 가치투자 전략의 실효성이 특히 높음</span>
+          </div>
+        </div>
+        <div class="s-pros-cons">
+          <div class="pros-box">
+            <div class="s-section-label">장점</div>
+            <ul class="check-list">
+              <li><span>✓</span><span>학술·실전 모두 검증된 가장 오래된 전략</span></li>
+              <li><span>✓</span><span>월 1회 리밸런싱으로 관리 부담 최소</span></li>
+              <li><span>✓</span><span>하락장에서도 저평가 안전마진 보유</span></li>
+            </ul>
+          </div>
+          <div class="cons-box">
+            <div class="s-section-label">단점</div>
+            <ul class="check-list">
+              <li><span>✗</span><span>단기 수익 실현 어려움 (장기 보유 필요)</span></li>
+              <li><span>✗</span><span>저PBR 함정(Value Trap) 위험</span></li>
+              <li><span>✗</span><span>국내 KIS API ROE 직접 제공 없어 EPS/BPS 근사치 사용</span></li>
+            </ul>
+          </div>
+        </div>
+        <div class="s-target">
+          <div class="target-box">
+            <i class="fa-solid fa-user-check" style="color:var(--amber)"></i>
+            <span style="font-size:.875rem;color:var(--text-muted)"><strong style="color:var(--text)">이런 분께 추천:</strong> 장기 투자, 안정적 수익 추구, 우량 국내 대형주에 관심 있는 분</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -608,13 +979,15 @@
       <div class="guide-accounts">
         <span class="pill pill-green">듀얼 모멘텀</span>
         <span class="pill pill-blue">골든크로스+RSI</span>
+        <span class="pill pill-amber">가치투자</span>
       </div>
     </div>
     <div class="guide-card">
       <div class="guide-type">균형형</div>
       <p style="font-size:.82rem;color:var(--text-muted);margin-bottom:10px">수익과 리스크 사이의 균형을 추구하는 투자자</p>
       <div class="guide-accounts">
-        <span class="pill pill-green">듀얼 모멘텀</span>
+        <span class="pill pill-teal">볼린저 밴드</span>
+        <span class="pill pill-sky">MACD</span>
         <span class="pill pill-orange">52주 신고가</span>
       </div>
     </div>
@@ -622,6 +995,7 @@
       <div class="guide-type">공격형</div>
       <p style="font-size:.82rem;color:var(--text-muted);margin-bottom:10px">높은 수익을 위해 적극적으로 리스크를 감수하는 투자자</p>
       <div class="guide-accounts">
+        <span class="pill pill-rose">터틀 트레이딩</span>
         <span class="pill pill-orange">52주 신고가</span>
         <span class="pill pill-purple">변동성 돌파</span>
       </div>
@@ -745,5 +1119,28 @@ const observer = new IntersectionObserver((entries) => {
 }, { threshold: 0.3 });
 
 document.querySelectorAll('.s-stats').forEach(el => observer.observe(el));
+
+(function() {
+  const ctx = document.getElementById('chart5').getContext('2d');
+  const data = generateData(5, 0.12, 2.2);
+  new Chart(ctx, { type: 'line', data: { labels, datasets: [{ data, borderColor: '#14b8a6', borderWidth: 2, fill: true, backgroundColor: makeGradient(ctx, 'rgb(20,184,166)'), tension: 0.4 }] }, options: chartDefaults });
+})();
+
+(function() {
+  const ctx = document.getElementById('chart6').getContext('2d');
+  new Chart(ctx, { type: 'line', data: { labels, datasets: [{ data: generateData(6, 0.20, 2.0), borderColor: '#0ea5e9', borderWidth: 2, fill: true, backgroundColor: makeGradient(ctx, 'rgb(14,165,233)'), tension: 0.4 }] }, options: chartDefaults });
+})();
+
+(function() {
+  const ctx = document.getElementById('chart7').getContext('2d');
+  const data = generateData(7, 0.25, 2.8);
+  new Chart(ctx, { type: 'line', data: { labels, datasets: [{ data, borderColor: '#f43f5e', borderWidth: 2, fill: true, backgroundColor: makeGradient(ctx, 'rgb(244,63,94)'), tension: 0.35 }] }, options: chartDefaults });
+})();
+
+(function() {
+  const ctx = document.getElementById('chart8').getContext('2d');
+  const data = generateData(8, 0.35, 1.2);
+  new Chart(ctx, { type: 'line', data: { labels, datasets: [{ data, borderColor: '#f59e0b', borderWidth: 2, fill: true, backgroundColor: makeGradient(ctx, 'rgb(245,158,11)'), tension: 0.4 }] }, options: chartDefaults });
+})();
 </script>
 {% endblock %}
