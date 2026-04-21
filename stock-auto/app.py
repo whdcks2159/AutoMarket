@@ -1,10 +1,14 @@
 import os
+import atexit
 from flask import Flask
 from config import config
 from models import db
 
+_scheduler = None
+
 
 def create_app(config_name: str = None) -> Flask:
+    global _scheduler
     app = Flask(__name__)
     cfg_name = config_name or os.environ.get('FLASK_ENV', 'default')
     app.config.from_object(config[cfg_name])
@@ -25,21 +29,17 @@ def create_app(config_name: str = None) -> Flask:
 
         db.create_all()
 
+    if _scheduler is None:
+        from scheduler import create_scheduler
+        _scheduler = create_scheduler()
+        _scheduler.start()
+        atexit.register(lambda: _scheduler.shutdown(wait=False))
+
     return app
 
 
 app = create_app()
 
 if __name__ == '__main__':
-    from scheduler import create_scheduler
-
-    scheduler = create_scheduler()
-    scheduler.start()
-
-    import atexit
-    atexit.register(lambda: scheduler.shutdown(wait=False))
-
-    # HTTPS 없이 OAuth 테스트용 (개발 환경)
     os.environ.setdefault('OAUTHLIB_INSECURE_TRANSPORT', '1')
-
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)), debug=True)

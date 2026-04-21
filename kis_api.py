@@ -218,9 +218,10 @@ class KISClient:
 
         url = f"{self.base_url}/uapi/domestic-stock/v1/quotations/volume-rank"
         tr_id = "FHPST01710000"
+        scr_div = "20172" if market_div == 'Q' else "20171"
         params = {
             "fid_cond_mrkt_div_code": market_div,
-            "fid_cond_scr_div_code": "20171",
+            "fid_cond_scr_div_code": scr_div,
             "fid_input_iscd": "0000",
             "fid_rank_sort_cls_code": "0",
             "fid_input_cnt_1": "0",

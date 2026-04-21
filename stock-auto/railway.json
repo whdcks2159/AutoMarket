@@ -4,7 +4,7 @@
     "builder": "RAILPACK"
   },
   "deploy": {
-    "startCommand": "gunicorn app:app --workers 2 --bind 0.0.0.0:$PORT",
+    "startCommand": "gunicorn app:app --config gunicorn.conf.py --bind 0.0.0.0:${PORT:-5000}",
     "healthcheckPath": "/",
     "restartPolicyType": "ON_FAILURE"
   }
