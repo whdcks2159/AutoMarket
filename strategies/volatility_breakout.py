@@ -8,6 +8,7 @@ K 자동 최적화 포함
 """
 import json
 import os
+import time
 from .base import BaseStrategy
 
 
