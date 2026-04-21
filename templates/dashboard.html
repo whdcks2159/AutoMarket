@@ -592,7 +592,7 @@ async function loadScanResults() {
       return `<tr>
         <td data-label="시간">${dt}</td>
         <td data-label="전략"><span class="badge badge-primary">${label}</span></td>
-        <td data-label="종목"><strong>${r.ticker}</strong></td>
+        <td data-label="종목"><strong>${r.ticker_name || r.ticker}</strong>${r.ticker_name ? `<br><span style="font-size:.75rem;color:var(--text-muted)">${r.ticker}</span>` : ''}</td>
         <td data-label="신호">${badge}</td>
         <td data-label="사유" style="font-size:.8rem;color:var(--text-muted)">${r.reason || '-'}</td>
       </tr>`;

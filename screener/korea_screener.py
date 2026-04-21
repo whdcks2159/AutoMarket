@@ -244,6 +244,7 @@ class KoreaScreener:
                     account_id=self.account.id,
                     strategy=strategy,
                     ticker=r['symbol'],
+                    ticker_name=r.get('name', ''),
                     signal=r.get('signal', 'BUY'),
                     reason=r.get('reason', ''),
                     scanned_at=now,

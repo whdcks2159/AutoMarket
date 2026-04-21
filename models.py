@@ -116,6 +116,7 @@ class ScanResult(db.Model):
     account_id = db.Column(db.Integer, db.ForeignKey('accounts.id'), nullable=False)
     strategy = db.Column(db.String(64), nullable=False)
     ticker = db.Column(db.String(16), nullable=False)
+    ticker_name = db.Column(db.String(64))
     signal = db.Column(db.String(16))  # BUY, WATCH
     reason = db.Column(db.Text)
     scanned_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -125,6 +126,7 @@ class ScanResult(db.Model):
             'id': self.id,
             'strategy': self.strategy,
             'ticker': self.ticker,
+            'ticker_name': self.ticker_name,
             'signal': self.signal,
             'reason': self.reason,
             'scanned_at': self.scanned_at.isoformat() if self.scanned_at else None,

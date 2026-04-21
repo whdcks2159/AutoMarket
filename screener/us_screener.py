@@ -228,6 +228,7 @@ class USScreener:
                     account_id=self.account.id,
                     strategy=strategy,
                     ticker=ticker_str,
+                    ticker_name=r.get('name', ''),
                     signal=r.get('signal', 'BUY'),
                     reason=make_reason(r),
                     scanned_at=now,
