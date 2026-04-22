@@ -45,6 +45,26 @@
   </div>
 </div>
 
+<!-- 다음 실행 예정 -->
+<div class="card" style="margin-bottom:24px" id="nextRunCard">
+  <div class="card-header">
+    <div class="card-title" style="display:flex;align-items:center;gap:8px">
+      <span id="nextRunDot" style="width:8px;height:8px;border-radius:50%;background:var(--text-muted);display:inline-block"></span>
+      다음 실행 예정
+    </div>
+    <span id="nextRunInterval" style="font-size:.75rem;color:var(--text-muted)">로딩 중...</span>
+  </div>
+  <div style="padding:4px 0 8px;display:flex;align-items:center;gap:16px">
+    <div style="flex:1">
+      <div id="nextRunLabel" style="font-size:1.1rem;font-weight:600;color:var(--text)">—</div>
+      <div id="nextRunCountdown" style="font-size:.8rem;color:var(--text-muted);margin-top:4px">—</div>
+    </div>
+    <div style="font-size:.75rem;color:var(--text-muted);text-align:right">
+      매수 조건 충족 시 자동 주문<br>아래 로그에서 실시간 상태 확인
+    </div>
+  </div>
+</div>
+
 <!-- 보유 종목 -->
 <div class="card" style="margin-bottom:24px">
   <div class="card-header">
@@ -287,10 +307,48 @@ async function submitEdit() {
   }
 }
 
+let nextRunTime = null;
+let countdownTimer = null;
+
+async function loadNextRun() {
+  try {
+    const data = await apiFetch(`/api/accounts/${accountId}/next_run`);
+    document.getElementById('nextRunInterval').textContent = data.interval || '-';
+    document.getElementById('nextRunLabel').textContent = data.label || '—';
+    const dot = document.getElementById('nextRunDot');
+    const countdown = document.getElementById('nextRunCountdown');
+    if (data.next_run) {
+      nextRunTime = new Date(data.next_run);
+      dot.style.background = '#4f7cff';
+      dot.style.boxShadow = '0 0 6px #4f7cff88';
+      if (countdownTimer) clearInterval(countdownTimer);
+      countdownTimer = setInterval(() => {
+        const diff = Math.floor((nextRunTime - Date.now()) / 1000);
+        if (diff <= 0) {
+          countdown.textContent = '곧 실행됩니다...';
+          clearInterval(countdownTimer);
+          setTimeout(loadNextRun, 10000);
+          return;
+        }
+        const h = Math.floor(diff / 3600);
+        const m = Math.floor((diff % 3600) / 60);
+        const s = diff % 60;
+        countdown.textContent = h > 0 ? `${h}시간 ${m}분 후` : m > 0 ? `${m}분 ${s}초 후` : `${s}초 후`;
+      }, 1000);
+    } else {
+      countdown.textContent = '전략을 설정해주세요';
+    }
+  } catch(e) {
+    document.getElementById('nextRunLabel').textContent = '조회 실패';
+  }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   loadHoldings();
   loadTrades();
   loadLogs();
+  loadNextRun();
+  setInterval(loadNextRun, 60000);
 });
 </script>
 {% endblock %}

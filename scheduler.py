@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 import pytz
@@ -296,6 +296,70 @@ def job_dual_momentum():
         return
     logger.info("듀얼 모멘텀 월간 리밸런싱 실행")
     run_all_active_strategies('dual_momentum')
+
+
+def get_next_run_info(strategy_name: str) -> dict:
+    """전략별 다음 실행 예정 시간을 반환합니다."""
+    now = datetime.now(KST)
+
+    def _next_trading_day(from_dt):
+        d = from_dt + timedelta(days=1)
+        while d.weekday() >= 5 or d.strftime('%Y%m%d') in HOLIDAYS_KR:
+            d += timedelta(days=1)
+        return d
+
+    def _is_trading_now():
+        return now.weekday() < 5 and now.strftime('%Y%m%d') not in HOLIDAYS_KR
+
+    if strategy_name in ('golden_rsi', 'week52_high', 'bollinger_band', 'macd', 'turtle_trading', 'value_investing'):
+        slots = [
+            now.replace(hour=9, minute=0, second=0, microsecond=0),
+            now.replace(hour=15, minute=20, second=0, microsecond=0),
+        ]
+        for t in slots:
+            if t > now and _is_trading_now():
+                label = '09:00 장 시작' if t.hour == 9 else '15:20 장 마감'
+                return {'next_run': t.isoformat(), 'label': f"오늘 {label}", 'interval': '09:00 / 15:20 (거래일)'}
+        next_day = _next_trading_day(now)
+        t = next_day.replace(hour=9, minute=0, second=0, microsecond=0)
+        return {'next_run': t.isoformat(), 'label': f"{next_day.strftime('%m/%d')} 09:00", 'interval': '09:00 / 15:20 (거래일)'}
+
+    if strategy_name == 'volatility_breakout':
+        open_t = now.replace(hour=9, minute=0, second=0, microsecond=0)
+        close_t = now.replace(hour=15, minute=30, second=0, microsecond=0)
+        if _is_trading_now() and open_t <= now < close_t:
+            next_min = ((now.minute // 5) + 1) * 5
+            next_run = now.replace(second=0, microsecond=0) + timedelta(minutes=(next_min - now.minute))
+            if next_run <= close_t:
+                secs = int((next_run - now).total_seconds())
+                return {'next_run': next_run.isoformat(), 'label': f"약 {secs // 60}분 {secs % 60}초 후 ({next_run.strftime('%H:%M')})", 'interval': '5분마다 (09:00~15:30)'}
+        if _is_trading_now() and now < open_t:
+            return {'next_run': open_t.isoformat(), 'label': '오늘 09:00 장 시작', 'interval': '5분마다 (09:00~15:30)'}
+        next_day = _next_trading_day(now)
+        t = next_day.replace(hour=9, minute=0, second=0, microsecond=0)
+        return {'next_run': t.isoformat(), 'label': f"{next_day.strftime('%m/%d')} 09:00", 'interval': '5분마다 (09:00~15:30)'}
+
+    if strategy_name == 'dual_momentum':
+        for day in range(1, 8):
+            try:
+                candidate = now.replace(day=day, hour=23, minute=30, second=0, microsecond=0)
+            except ValueError:
+                continue
+            if candidate.weekday() < 5 and candidate > now:
+                return {'next_run': candidate.isoformat(), 'label': f"이번 달 {day}일 23:30 (첫 거래일)", 'interval': '매월 첫 거래일 23:30'}
+        if now.month == 12:
+            next_month = now.replace(year=now.year + 1, month=1, day=1)
+        else:
+            next_month = now.replace(month=now.month + 1, day=1)
+        for day in range(1, 8):
+            try:
+                candidate = next_month.replace(day=day, hour=23, minute=30, second=0, microsecond=0)
+            except ValueError:
+                continue
+            if candidate.weekday() < 5:
+                return {'next_run': candidate.isoformat(), 'label': f"다음 달 {candidate.strftime('%m/%d')} 23:30", 'interval': '매월 첫 거래일 23:30'}
+
+    return {'next_run': None, 'label': '알 수 없음', 'interval': '-'}
 
 
 def create_scheduler() -> BackgroundScheduler:

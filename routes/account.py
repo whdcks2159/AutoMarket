@@ -189,6 +189,16 @@ def get_logs(account_id):
     return jsonify([l.to_dict() for l in logs])
 
 
+@account_bp.route('/<int:account_id>/next_run', methods=['GET'])
+@login_required
+def get_next_run(account_id):
+    account = _owned_account(account_id)
+    if not account.strategy:
+        return jsonify({'label': '전략 미설정', 'next_run': None, 'interval': '-'})
+    from scheduler import get_next_run_info
+    return jsonify(get_next_run_info(account.strategy))
+
+
 def _sell_all_holdings(account: Account, kis: KISClient):
     if account.market_type == 'KR':
         data = kis.get_balance_kr()
