@@ -48,6 +48,8 @@ class GoldenRSIStrategy(BaseStrategy):
         golden_cross = sma5 > sma20
         dead_cross = sma5 < sma20
 
+        cross_label = '골든크로스' if golden_cross else '데드크로스'
+
         # 매수 판단
         if held_qty == 0:
             should_buy = (golden_cross and rsi < 70) or (rsi < 30 and golden_cross)
@@ -60,6 +62,9 @@ class GoldenRSIStrategy(BaseStrategy):
                         self.record_trade(symbol, symbol, 'BUY', qty, current_price, result)
                     except Exception as e:
                         self.record_trade(symbol, symbol, 'BUY', qty, current_price, error=str(e))
+            else:
+                buy_cond = f"RSI={rsi:.1f}{'<70 ✓' if rsi < 70 else '≥70 ✗'}, {cross_label}{'✓' if golden_cross else ' ✗'}"
+                self.log_signal(f"스캔 {symbol} | {current_price}원 | {buy_cond} — 매수 대기", event_type='INFO')
 
         # 매도 판단
         elif held_qty > 0:
@@ -71,7 +76,9 @@ class GoldenRSIStrategy(BaseStrategy):
                     self.record_trade(symbol, symbol, 'SELL', held_qty, current_price, result)
                 except Exception as e:
                     self.record_trade(symbol, symbol, 'SELL', held_qty, current_price, error=str(e))
+            else:
+                self.log_signal(f"보유 중 {symbol} | {current_price}원 | RSI={rsi:.1f} {cross_label} — 보유 유지", event_type='INFO')
 
     def _calc_qty(self, price: float) -> int:
-        limit = self.account.investment_limit
-        return max(0, int(limit * 0.2 / price))  # 투자한도의 20%씩 분산
+        budget = min(self.account.investment_limit * 0.2, self.get_available_cash_kr())
+        return max(0, int(budget / price))

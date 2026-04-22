@@ -58,6 +58,24 @@ class BaseStrategy(ABC):
         db.session.commit()
         return trade
 
+    def get_available_cash_kr(self) -> float:
+        if self.kis.mock_mode:
+            return float(self.account.investment_limit)
+        try:
+            data = self.kis.get_balance_kr()
+            return float(data.get('output2', {}).get('dnca_tot_amt', 0) or 0)
+        except Exception:
+            return 0.0
+
+    def get_available_cash_us(self) -> float:
+        if self.kis.mock_mode:
+            return float(self.account.investment_limit) / 1350
+        try:
+            data = self.kis.get_balance_us()
+            return float(data.get('frcr_dncl_amt_2', 0) or 0)
+        except Exception:
+            return 0.0
+
     @staticmethod
     def calc_rsi(closes: list, period: int = 14) -> float:
         if len(closes) < period + 1:

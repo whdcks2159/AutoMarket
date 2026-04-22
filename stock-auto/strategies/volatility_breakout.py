@@ -75,6 +75,9 @@ class VolatilityBreakoutStrategy(BaseStrategy):
                         self.log_signal(f"변동성 돌파 매수 {symbol} | {current} >= 목표 {target_price:.0f} K={k}")
                         result = self.kis.order_with_retry(symbol, 'BUY', qty, current, 'KR')
                         self.record_trade(symbol, symbol, 'BUY', qty, current, result)
+                elif held_qty == 0:
+                    gap = target_price - current
+                    self.log_signal(f"스캔 {symbol} | 현재={current} 목표={target_price:.0f} K={k} — {gap:.0f}원 남음 (대기)", event_type='INFO')
             except Exception as e:
                 self.log_signal(f"{symbol} 오류: {e}", event_type='ERROR')
 
@@ -112,6 +115,8 @@ class VolatilityBreakoutStrategy(BaseStrategy):
                         self.log_signal(f"변동성 돌파 매수 {symbol} | ${current} >= 목표 ${target_price:.2f}")
                         result = self.kis.order_with_retry(symbol, 'BUY', qty, current, 'US', excd)
                         self.record_trade(symbol, symbol, 'BUY', qty, current, result)
+                elif held_qty == 0:
+                    self.log_signal(f"스캔 {symbol} | ${current} 목표=${target_price:.2f} K={k} — ${target_price - current:.2f} 남음 (대기)", event_type='INFO')
             except Exception as e:
                 self.log_signal(f"{symbol} 오류: {e}", event_type='ERROR')
 
@@ -182,6 +187,7 @@ class VolatilityBreakoutStrategy(BaseStrategy):
     def _calc_qty(self, price: float, market: str) -> int:
         limit = self.account.investment_limit
         if market == 'US':
-            limit_usd = limit / 1350
-            return max(0, int(limit_usd * 0.5 / price))
-        return max(0, int(limit * 0.5 / price))
+            budget = min(limit / 1350 * 0.5, self.get_available_cash_us())
+            return max(0, int(budget / price))
+        budget = min(limit * 0.5, self.get_available_cash_kr())
+        return max(0, int(budget / price))

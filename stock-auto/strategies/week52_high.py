@@ -46,6 +46,8 @@ class Week52HighStrategy(BaseStrategy):
         sma20 = self.calc_sma(closes, self.SMA_PERIOD)
         held_qty = holdings.get(symbol, 0)
 
+        ratio = current / week52_high * 100 if week52_high else 0
+
         if held_qty == 0 and current > week52_high * 0.999:
             qty = self._calc_qty(current, 'KR')
             if qty > 0:
@@ -55,6 +57,8 @@ class Week52HighStrategy(BaseStrategy):
                     self.record_trade(symbol, symbol, 'BUY', qty, current, result)
                 except Exception as e:
                     self.record_trade(symbol, symbol, 'BUY', qty, current, error=str(e))
+        elif held_qty == 0:
+            self.log_signal(f"스캔 {symbol} | {current}원 | 52주고가={week52_high:.0f} ({ratio:.1f}%) — 돌파 대기 ({week52_high - current:.0f}원 남음)", event_type='INFO')
 
         elif held_qty > 0:
             buy_price = self._get_avg_buy_price_kr(symbol, holdings)
@@ -85,6 +89,8 @@ class Week52HighStrategy(BaseStrategy):
         sma20 = self.calc_sma(closes, self.SMA_PERIOD)
         held_qty = holdings.get(symbol, 0)
 
+        ratio = current / week52_high * 100 if week52_high else 0
+
         if held_qty == 0 and current > week52_high * 0.999:
             qty = self._calc_qty(current, 'US')
             if qty > 0:
@@ -94,6 +100,8 @@ class Week52HighStrategy(BaseStrategy):
                     self.record_trade(symbol, symbol, 'BUY', qty, current, result)
                 except Exception as e:
                     self.record_trade(symbol, symbol, 'BUY', qty, current, error=str(e))
+        elif held_qty == 0:
+            self.log_signal(f"스캔 {symbol} | ${current} | 52주고가=${week52_high:.2f} ({ratio:.1f}%) — 돌파 대기", event_type='INFO')
 
         elif held_qty > 0 and current < sma20:
             self.log_signal(f"20일선 이탈 매도 {symbol} | ${current} SMA20=${sma20:.2f}")
@@ -130,6 +138,7 @@ class Week52HighStrategy(BaseStrategy):
     def _calc_qty(self, price: float, market: str) -> int:
         limit = self.account.investment_limit
         if market == 'US':
-            limit_usd = limit / 1350
-            return max(0, int(limit_usd * 0.3 / price))
-        return max(0, int(limit * 0.3 / price))
+            budget = min(limit / 1350 * 0.3, self.get_available_cash_us())
+            return max(0, int(budget / price))
+        budget = min(limit * 0.3, self.get_available_cash_kr())
+        return max(0, int(budget / price))
