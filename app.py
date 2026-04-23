@@ -1,4 +1,5 @@
 import os
+import threading
 from flask import Flask, jsonify
 from config import config
 from models import db
@@ -32,14 +33,22 @@ def create_app(config_name: str = None) -> Flask:
         app.register_blueprint(screener_bp)
         app.register_blueprint(strategies_bp)
 
-        db.create_all()
-        _migrate_schema(db)
+    # DB 스키마 초기화를 백그라운드에서 실행 — 워커 시작을 블로킹하지 않음
+    def _init_db():
+        with app.app_context():
+            try:
+                db.create_all()
+                _migrate_schema(db)
+                app.logger.info("DB 스키마 초기화 완료")
+            except Exception as e:
+                app.logger.error("DB 스키마 초기화 실패: %s", e)
+
+    threading.Thread(target=_init_db, daemon=True).start()
 
     return app
 
 
 def _migrate_schema(db):
-    """기존 테이블에 누락된 컬럼을 추가한다."""
     migrations = [
         ("accounts", "screener_enabled", "BOOLEAN DEFAULT FALSE"),
         ("accounts", "screener_targets", "VARCHAR(128) DEFAULT 'KOSPI,KOSDAQ'"),
@@ -68,7 +77,5 @@ if __name__ == '__main__':
     import atexit
     atexit.register(lambda: scheduler.shutdown(wait=False))
 
-    # HTTPS 없이 OAuth 테스트용 (개발 환경)
     os.environ.setdefault('OAUTHLIB_INSECURE_TRANSPORT', '1')
-
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)), debug=True)
