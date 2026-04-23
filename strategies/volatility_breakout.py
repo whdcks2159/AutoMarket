@@ -73,17 +73,21 @@ class VolatilityBreakoutStrategy(BaseStrategy):
                 current = float(price_data['output']['stck_prpr'])
 
                 held_qty = holdings.get(symbol, 0)
+                self.log_signal(f"{symbol} 현재={current:,.0f} 목표={target_price:,.0f} 보유={held_qty} K={k:.1f}")
                 if held_qty == 0 and current >= target_price:
                     if not self.check_daily_buy_limit():
                         self.log_signal(f"일일 매수 한도 초과 — {symbol} 스킵")
                         break
                     if self.already_bought_today(symbol):
+                        self.log_signal(f"{symbol} 오늘 이미 매수 완료 — 스킵")
                         continue
                     qty = self.screener_qty(current, 0.5) or self._calc_qty(current, 'KR', 0.5)
                     if qty > 0:
                         self.log_signal(f"변동성 돌파 매수 {symbol} | {current} >= 목표 {target_price:.0f} K={k}")
                         result = self.kis.order_with_retry(symbol, 'BUY', qty, current, 'KR')
                         self.record_trade(symbol, symbol, 'BUY', qty, current, result)
+                    else:
+                        self.log_signal(f"{symbol} 매수 수량 0 — 잔고 부족 스킵")
             except Exception as e:
                 self.log_signal(f"{symbol} 오류: {e}", event_type='ERROR')
 
