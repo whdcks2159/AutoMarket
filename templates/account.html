@@ -218,7 +218,7 @@ async function loadTrades(page = 1) {
   currentPage = page;
   const tbody = document.getElementById('tradeBody');
   try {
-    const data = await apiFetch(`/api/accounts/${accountId}/trades?page=${page}&per_page=15`);
+    const data = await apiFetch(`/api/accounts/${accountId}/trades?page=${page}&per_page=5`);
     document.getElementById('tradePager').textContent = `총 ${data.total}건`;
 
     if (!data.trades.length) {

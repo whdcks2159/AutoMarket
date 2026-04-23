@@ -113,6 +113,10 @@
       </tbody>
     </table>
   </div>
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-top:12px;padding:0 4px">
+    <span id="scanPagerInfo" style="font-size:.8rem;color:var(--text-muted)"></span>
+    <div style="display:flex;gap:6px" id="scanPagerBtns"></div>
+  </div>
 </div>
 
 <!-- 차트 섹션 -->
@@ -566,7 +570,12 @@ async function runManualScan() {
 }
 
 // ── 스캔 결과 로드 ────────────────────────────────────────────────
-async function loadScanResults() {
+const strategyLabels = {
+  'golden_rsi': '골든RSI', 'dual_momentum': '듀얼모멘텀',
+  'week52_high': '52주신고가', 'volatility_breakout': '변동성돌파',
+};
+
+async function loadScanResults(page = 1) {
   const select = document.getElementById('scanAccountSelect');
   if (!select) return;
   const accountId = select.value;
@@ -574,15 +583,16 @@ async function loadScanResults() {
   tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:16px">불러오는 중...</td></tr>';
 
   try {
-    const results = await apiFetch(`/api/screener/results/${accountId}?limit=30&today=true`);
-    const strategyLabels = {
-      'golden_rsi': '골든RSI', 'dual_momentum': '듀얼모멘텀',
-      'week52_high': '52주신고가', 'volatility_breakout': '변동성돌파',
-    };
+    const data = await apiFetch(`/api/screener/results/${accountId}?per_page=5&page=${page}&today=true`);
+    const results = data.results || [];
+
     if (!results.length) {
       tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:24px">오늘 스캔 결과가 없습니다</td></tr>';
+      document.getElementById('scanPagerInfo').textContent = '';
+      document.getElementById('scanPagerBtns').innerHTML = '';
       return;
     }
+
     tbody.innerHTML = results.map(r => {
       const dt = r.scanned_at ? new Date(r.scanned_at + 'Z').toLocaleTimeString('ko-KR') : '-';
       const badge = r.signal === 'BUY'
@@ -597,6 +607,17 @@ async function loadScanResults() {
         <td data-label="사유" style="font-size:.8rem;color:var(--text-muted)">${r.reason || '-'}</td>
       </tr>`;
     }).join('');
+
+    document.getElementById('scanPagerInfo').textContent = `총 ${data.total}건`;
+    const btns = document.getElementById('scanPagerBtns');
+    btns.innerHTML = '';
+    for (let p = 1; p <= data.pages; p++) {
+      const btn = document.createElement('button');
+      btn.className = `btn btn-sm ${p === page ? 'btn-primary' : 'btn-outline'}`;
+      btn.textContent = p;
+      btn.onclick = () => loadScanResults(p);
+      btns.appendChild(btn);
+    }
   } catch(e) {
     tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--danger)">${e.message}</td></tr>`;
   }

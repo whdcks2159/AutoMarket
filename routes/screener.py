@@ -68,7 +68,8 @@ def update_config(account_id):
 @login_required
 def get_results(account_id):
     account = _owned_account(account_id)
-    limit = request.args.get('limit', 50, type=int)
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 5, type=int)
     strategy = request.args.get('strategy')
     today_only = request.args.get('today', 'false').lower() == 'true'
 
@@ -80,8 +81,13 @@ def get_results(account_id):
         today_start = datetime.combine(today_kst, datetime.min.time())
         q = q.filter(ScanResult.scanned_at >= today_start)
 
-    results = q.order_by(ScanResult.scanned_at.desc()).limit(limit).all()
-    return jsonify([r.to_dict() for r in results])
+    pagination = q.order_by(ScanResult.scanned_at.desc()).paginate(page=page, per_page=per_page, error_out=False)
+    return jsonify({
+        'results': [r.to_dict() for r in pagination.items],
+        'total': pagination.total,
+        'pages': pagination.pages,
+        'page': page,
+    })
 
 
 # ── 수동 스캔 실행 ──────────────────────────────────────────────────────────
