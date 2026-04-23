@@ -365,12 +365,6 @@ def get_next_run_info(strategy_name: str) -> dict:
 def create_scheduler() -> BackgroundScheduler:
     scheduler = BackgroundScheduler(timezone=KST)
 
-    # 앱 시작 직후 1회 즉시 스캔+매수 (오늘 장 중이면 바로 실행)
-    from apscheduler.triggers.date import DateTrigger
-    from datetime import timedelta
-    run_at = datetime.now(KST) + timedelta(seconds=10)
-    scheduler.add_job(job_morning_kr, DateTrigger(run_date=run_at), id='morning_kr_boot')
-
     # 국내주 아침: 09:00 전체 스캔+매수 (골든RSI, 52주 신고가)
     scheduler.add_job(job_morning_kr, CronTrigger(hour=9, minute=0, timezone=KST), id='morning_kr')
 

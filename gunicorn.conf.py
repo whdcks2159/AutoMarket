@@ -3,7 +3,7 @@ import logging
 
 workers = 1  # 스케줄러 중복 실행 방지를 위해 워커 1개
 bind = "0.0.0.0:5000"
-timeout = 120
+timeout = 300
 loglevel = "info"
 
 _scheduler = None
