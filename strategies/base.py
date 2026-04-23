@@ -134,47 +134,48 @@ class BaseStrategy(ABC):
                 .filter(Trade.executed_at >= today_start)
                 .count()) > 0
 
-    def _get_cash_kr(self) -> float:
-        """잔고(원화) 1회 조회 후 캐싱."""
+    def _get_cash_kr(self) -> float | None:
+        """잔고(원화) 1회 조회 후 캐싱. 실패 시 None 반환."""
         if self._cash_kr is None:
             try:
-                self._cash_kr = self.kis.get_available_cash_kr()
+                val = self.kis.get_available_cash_kr()
+                self._cash_kr = val if val > 0 else None
             except Exception as e:
                 logger.warning("원화 잔고 조회 실패: %s", e)
-                self._cash_kr = 0.0
         return self._cash_kr
 
-    def _get_cash_us(self) -> float:
-        """잔고(USD) 1회 조회 후 캐싱."""
+    def _get_cash_us(self) -> float | None:
+        """잔고(USD) 1회 조회 후 캐싱. 실패 시 None 반환."""
         if self._cash_us is None:
             try:
-                self._cash_us = self.kis.get_available_cash_us()
+                val = self.kis.get_available_cash_us()
+                self._cash_us = val if val > 0 else None
             except Exception as e:
                 logger.warning("USD 잔고 조회 실패: %s", e)
-                self._cash_us = 0.0
         return self._cash_us
 
     def _calc_qty(self, price: float, market: str = 'KR', ratio: float = 0.3) -> int:
         """실제 예수금과 investment_limit 중 작은 값으로 수량 계산."""
         if market == 'KR':
             cash = self._get_cash_kr()
-            limit = min(cash, self.account.investment_limit)
+            limit = min(cash, self.account.investment_limit) if cash is not None else self.account.investment_limit
             return max(0, int(limit * ratio / price))
         else:
-            cash_usd = self._get_cash_us()
-            limit_usd = min(cash_usd, self.account.investment_limit / 1350)
-            return max(0, int(limit_usd * ratio / price))
+            cash = self._get_cash_us()
+            limit = min(cash, self.account.investment_limit / 1350) if cash is not None else self.account.investment_limit / 1350
+            return max(0, int(limit / price))
 
     def screener_qty(self, price: float, ratio: float = 1.0, market: str = 'KR') -> int:
         """스크리너 활성화 시 per_symbol_limit 적용, 미활성 시 None 반환."""
         if not getattr(self.account, 'screener_enabled', False):
             return None
         if market == 'US':
+            base = self.account.screener_per_symbol_limit * ratio / 1350
             cash = self._get_cash_us()
-            limit = min(self.account.screener_per_symbol_limit * ratio / 1350, cash)
         else:
+            base = self.account.screener_per_symbol_limit * ratio
             cash = self._get_cash_kr()
-            limit = min(self.account.screener_per_symbol_limit * ratio, cash)
+        limit = min(base, cash) if cash is not None else base
         return max(0, int(limit / price))
 
     @staticmethod
