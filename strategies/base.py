@@ -128,7 +128,7 @@ class BaseStrategy(ABC):
         from datetime import date, datetime
         today_start = datetime.combine(_today_kst(), datetime.min.time())
         return (Trade.query
-                .filter_by(account_id=self.account.id, symbol=symbol, side='BUY')
+                .filter_by(account_id=self.account.id, symbol=symbol, side='BUY', status='FILLED')
                 .filter(Trade.executed_at >= today_start)
                 .count()) > 0
 
@@ -154,8 +154,17 @@ class BaseStrategy(ABC):
         if not getattr(self.account, 'screener_enabled', False):
             return None
         limit = self.account.screener_per_symbol_limit * ratio
-        if market == 'US':
-            limit = limit / 1350
+        try:
+            if market == 'US':
+                cash = self.kis.get_available_cash_us()
+                limit = min(limit / 1350, cash)
+            else:
+                cash = self.kis.get_available_cash_kr()
+                limit = min(limit, cash)
+        except Exception as e:
+            logger.warning("잔고 조회 실패, screener_per_symbol_limit으로 fallback: %s", e)
+            if market == 'US':
+                limit = limit / 1350
         return max(0, int(limit / price))
 
     @staticmethod
