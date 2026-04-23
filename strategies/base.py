@@ -23,6 +23,8 @@ class BaseStrategy(ABC):
     def __init__(self, account, kis_client):
         self.account = account
         self.kis = kis_client
+        self._cash_kr: float | None = None
+        self._cash_us: float | None = None
 
     @abstractmethod
     def run(self):
@@ -132,36 +134,47 @@ class BaseStrategy(ABC):
                 .filter(Trade.executed_at >= today_start)
                 .count()) > 0
 
+    def _get_cash_kr(self) -> float:
+        """잔고(원화) 1회 조회 후 캐싱."""
+        if self._cash_kr is None:
+            try:
+                self._cash_kr = self.kis.get_available_cash_kr()
+            except Exception as e:
+                logger.warning("원화 잔고 조회 실패: %s", e)
+                self._cash_kr = 0.0
+        return self._cash_kr
+
+    def _get_cash_us(self) -> float:
+        """잔고(USD) 1회 조회 후 캐싱."""
+        if self._cash_us is None:
+            try:
+                self._cash_us = self.kis.get_available_cash_us()
+            except Exception as e:
+                logger.warning("USD 잔고 조회 실패: %s", e)
+                self._cash_us = 0.0
+        return self._cash_us
+
     def _calc_qty(self, price: float, market: str = 'KR', ratio: float = 0.3) -> int:
         """실제 예수금과 investment_limit 중 작은 값으로 수량 계산."""
-        try:
-            if market == 'KR':
-                cash = self.kis.get_available_cash_kr()
-                limit = min(cash, self.account.investment_limit)
-                return max(0, int(limit * ratio / price))
-            else:
-                cash_usd = self.kis.get_available_cash_us()
-                limit_usd = min(cash_usd, self.account.investment_limit / 1350)
-                return max(0, int(limit_usd * ratio / price))
-        except Exception as e:
-            logger.warning("잔고 조회 실패, 매수 스킵: %s", e)
-            return 0
+        if market == 'KR':
+            cash = self._get_cash_kr()
+            limit = min(cash, self.account.investment_limit)
+            return max(0, int(limit * ratio / price))
+        else:
+            cash_usd = self._get_cash_us()
+            limit_usd = min(cash_usd, self.account.investment_limit / 1350)
+            return max(0, int(limit_usd * ratio / price))
 
     def screener_qty(self, price: float, ratio: float = 1.0, market: str = 'KR') -> int:
         """스크리너 활성화 시 per_symbol_limit 적용, 미활성 시 None 반환."""
         if not getattr(self.account, 'screener_enabled', False):
             return None
-        limit = self.account.screener_per_symbol_limit * ratio
-        try:
-            if market == 'US':
-                cash = self.kis.get_available_cash_us()
-                limit = min(limit / 1350, cash)
-            else:
-                cash = self.kis.get_available_cash_kr()
-                limit = min(limit, cash)
-        except Exception as e:
-            logger.warning("잔고 조회 실패, 매수 스킵: %s", e)
-            return 0
+        if market == 'US':
+            cash = self._get_cash_us()
+            limit = min(self.account.screener_per_symbol_limit * ratio / 1350, cash)
+        else:
+            cash = self._get_cash_kr()
+            limit = min(self.account.screener_per_symbol_limit * ratio, cash)
         return max(0, int(limit / price))
 
     @staticmethod
