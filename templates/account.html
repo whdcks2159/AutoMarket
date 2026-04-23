@@ -190,7 +190,7 @@ async function loadHoldings() {
     const fmtAmt = (v) => isUS
       ? '$' + v.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})
       : '₩' + v.toLocaleString('ko-KR', {maximumFractionDigits: 0});
-    tbody.innerHTML = items.map(item => {
+    tbody.innerHTML = items.filter(item => parseInt(item.hldg_qty || item.ovrs_cblc_qty || 0) > 0).map(item => {
       const symbol = item.pdno || item.ovrs_pdno || '';
       const name = item.prdt_name || item.ovrs_item_name || symbol;
       const qty = parseInt(item.hldg_qty || item.ovrs_cblc_qty || 0);

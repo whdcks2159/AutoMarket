@@ -347,7 +347,7 @@ async function loadBalances() {
           const total = stockEval + cash;
           el.querySelector('div:last-child').textContent = '₩' + total.toLocaleString('ko-KR', {maximumFractionDigits: 0});
         } else {
-          const krw = parseFloat(output2.dnca_tot_amt || 0);
+          const krw = parseFloat(output2.tot_evlu_amt || 0);
           el.querySelector('div:last-child').textContent = '₩' + krw.toLocaleString('ko-KR', {maximumFractionDigits: 0});
         }
       }
