@@ -144,10 +144,8 @@ class BaseStrategy(ABC):
                 limit_usd = min(cash_usd, self.account.investment_limit / 1350)
                 return max(0, int(limit_usd * ratio / price))
         except Exception as e:
-            logger.warning("잔고 조회 실패, investment_limit으로 fallback: %s", e)
-            if market == 'US':
-                return max(0, int(self.account.investment_limit / 1350 * ratio / price))
-            return max(0, int(self.account.investment_limit * ratio / price))
+            logger.warning("잔고 조회 실패, 매수 스킵: %s", e)
+            return 0
 
     def screener_qty(self, price: float, ratio: float = 1.0, market: str = 'KR') -> int:
         """스크리너 활성화 시 per_symbol_limit 적용, 미활성 시 None 반환."""
@@ -162,9 +160,8 @@ class BaseStrategy(ABC):
                 cash = self.kis.get_available_cash_kr()
                 limit = min(limit, cash)
         except Exception as e:
-            logger.warning("잔고 조회 실패, screener_per_symbol_limit으로 fallback: %s", e)
-            if market == 'US':
-                limit = limit / 1350
+            logger.warning("잔고 조회 실패, 매수 스킵: %s", e)
+            return 0
         return max(0, int(limit / price))
 
     @staticmethod
