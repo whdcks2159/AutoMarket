@@ -1,17 +1,22 @@
-"""Gunicorn 설정 — 스케줄러를 워커 fork 이후에 실행."""
+"""Gunicorn 설정 — --preload로 앱을 마스터에서 한 번만 로드."""
 import logging
 
-workers = 1  # 스케줄러 중복 실행 방지를 위해 워커 1개
+workers = 1
 bind = "0.0.0.0:5000"
 timeout = 300
 loglevel = "info"
+preload_app = True  # 마스터에서 create_app() 1회 실행, 워커는 fork만
 
 _scheduler = None
 
 
 def post_fork(server, worker):
-    # on_starting 대신 post_fork 사용: fork 이전에 스케줄러(백그라운드 스레드)를
-    # 시작하면 fork된 워커가 잠긴 mutex를 상속받아 데드락이 발생한다.
+    # --preload 환경에서 fork 후 SQLAlchemy 연결 풀 초기화 (마스터 연결 오염 방지)
+    from app import app
+    with app.app_context():
+        from models import db
+        db.engine.dispose()
+
     global _scheduler
     from scheduler import create_scheduler
     _scheduler = create_scheduler()
