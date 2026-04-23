@@ -309,7 +309,10 @@ class KISClient:
         if self.mock_mode:
             return float(getattr(self.account, 'investment_limit', 0))
         data = self.get_balance_kr()
-        return float(data.get('output2', {}).get('dnca_tot_amt', 0) or 0)
+        output2 = data.get('output2', {})
+        if isinstance(output2, list):
+            output2 = output2[0] if output2 else {}
+        return float(output2.get('dnca_tot_amt', 0) or 0)
 
     def get_available_cash_us(self) -> float:
         """주문 가능 외화 예수금 (USD)."""
