@@ -1,11 +1,16 @@
 import os
-from flask import Flask
+from flask import Flask, jsonify
 from config import config
 from models import db
 
 
 def create_app(config_name: str = None) -> Flask:
     app = Flask(__name__)
+
+    @app.route('/health')
+    def health():
+        return jsonify({'status': 'ok'}), 200
+
     cfg_name = config_name or os.environ.get('FLASK_ENV', 'default')
     app.config.from_object(config[cfg_name])
 

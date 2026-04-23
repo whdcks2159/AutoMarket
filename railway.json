@@ -5,7 +5,7 @@
   },
   "deploy": {
     "startCommand": "gunicorn app:app --config gunicorn.conf.py --bind 0.0.0.0:${PORT:-5000}",
-    "healthcheckPath": "/",
+    "healthcheckPath": "/health",
     "restartPolicyType": "ON_FAILURE"
   }
 }
