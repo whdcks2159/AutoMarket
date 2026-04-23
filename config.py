@@ -13,6 +13,7 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_ENGINE_OPTIONS = {
         'pool_pre_ping': True,
+        'pool_recycle': 300,
         'connect_args': {'connect_timeout': 10} if _db_url.startswith(('postgres', 'postgresql')) else {},
     }
     ENCRYPTION_KEY = os.environ.get('ENCRYPTION_KEY', 'dev-encryption-key-32bytes!!!!!!!')
