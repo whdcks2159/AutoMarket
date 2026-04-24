@@ -305,14 +305,19 @@ class KISClient:
         return holdings
 
     def get_available_cash_kr(self) -> float:
-        """주문 가능 예수금 (원화)."""
+        """주문 가능 예수금 (원화). ord_psbl_cash = 가수도 포함 실제 주문가능금액."""
         if self.mock_mode:
             return float(getattr(self.account, 'investment_limit', 0))
         data = self.get_balance_kr()
         output2 = data.get('output2', {})
         if isinstance(output2, list):
             output2 = output2[0] if output2 else {}
-        return float(output2.get('dnca_tot_amt', 0) or 0)
+        # ord_psbl_cash: 주문가능현금 (가수도/전일매도 대금 포함)
+        # dnca_tot_amt: 예수금 총금액 (T+2 미결제분 미포함) — 이걸 쓰면 전일 매도 후 당일 재매수 불가
+        cash = float(output2.get('ord_psbl_cash', 0) or 0)
+        if cash == 0:
+            cash = float(output2.get('dnca_tot_amt', 0) or 0)
+        return cash
 
     def get_available_cash_us(self) -> float:
         """주문 가능 외화 예수금 (USD)."""
