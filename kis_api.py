@@ -25,29 +25,32 @@ def _raise_for_status(resp):
         )
 
 
-def _get_with_retry(url, headers, params, timeout=10, max_retries=3) -> requests.Response:
-    """초당 거래건수 초과(EGW00201) 시 backoff 후 재시도."""
+def _get_with_retry(url, headers, params, timeout=10, max_retries=3,
+                    kis_client=None, tr_id: str = None) -> requests.Response:
+    """레이트 리밋(EGW00201) 및 토큰 만료 시 재시도."""
+    _TOKEN_EXPIRED_CODES = {'EGW00133', 'EGW00121', 'EGW00100'}
     delay = 1.0
+    token_refreshed = False
     for attempt in range(max_retries):
         resp = requests.get(url, headers=headers, params=params, timeout=timeout)
-        if resp.ok:
-            body = resp.json()
-            if body.get('msg_cd') == 'EGW00201':
-                logger.warning("KIS 레이트 리밋 (EGW00201), %.1f초 후 재시도 (%d/%d)", delay, attempt + 1, max_retries)
-                time.sleep(delay)
-                delay *= 2
-                continue
-            return resp
-        # 500 이고 EGW00201 인 경우
         try:
             body = resp.json()
-            if body.get('msg_cd') == 'EGW00201':
-                logger.warning("KIS 레이트 리밋 500 (EGW00201), %.1f초 후 재시도 (%d/%d)", delay, attempt + 1, max_retries)
-                time.sleep(delay)
-                delay *= 2
-                continue
+            msg_cd = body.get('msg_cd', '')
         except Exception:
-            pass
+            body, msg_cd = {}, ''
+
+        if msg_cd == 'EGW00201':
+            logger.warning("KIS 레이트 리밋 (EGW00201), %.1f초 후 재시도 (%d/%d)", delay, attempt + 1, max_retries)
+            time.sleep(delay)
+            delay *= 2
+            continue
+
+        if msg_cd in _TOKEN_EXPIRED_CODES and kis_client and tr_id and not token_refreshed:
+            logger.warning("KIS 토큰 만료 (%s) — 재발급 후 재시도", msg_cd)
+            headers = kis_client._headers_fresh(tr_id)
+            token_refreshed = True
+            continue
+
         return resp
     return resp
 
@@ -106,11 +109,27 @@ class KISClient:
 
     # ─── 토큰 관리 ──────────────────────────────────────────────────────────────
 
-    def get_access_token(self) -> str:
+    # KIS는 매일 새벽 서버 측에서 토큰을 폐기함 → KST 당일 자정 이후 발급된 토큰만 유효
+    _TOKEN_EXPIRED_CODES = {'EGW00133', 'EGW00121', 'EGW00100'}
+
+    def _kst_today_midnight_utc(self) -> datetime:
+        import pytz
+        kst = pytz.timezone('Asia/Seoul')
+        now_kst = datetime.now(kst)
+        midnight_kst = now_kst.replace(hour=0, minute=0, second=0, microsecond=0)
+        return midnight_kst.astimezone(pytz.utc).replace(tzinfo=None)
+
+    def get_access_token(self, force: bool = False) -> str:
         now = datetime.utcnow()
-        if (self.account.kis_access_token
-                and self.account.kis_token_expires_at
-                and self.account.kis_token_expires_at > now):
+        midnight_utc = self._kst_today_midnight_utc()
+        token_valid = (
+            self.account.kis_access_token
+            and self.account.kis_token_expires_at
+            and self.account.kis_token_expires_at > now
+            # KST 자정 이후 발급된 토큰인지 확인 (KIS는 매일 새벽 기존 토큰 폐기)
+            and self.account.kis_token_expires_at > midnight_utc + timedelta(hours=23)
+        )
+        if token_valid and not force:
             return self.account.kis_access_token
 
         url = f"{self.base_url}/oauth2/tokenP"
@@ -124,11 +143,11 @@ class KISClient:
         data = resp.json()
         token = data['access_token']
 
-        # DB 갱신
         from models import db
         self.account.kis_access_token = token
         self.account.kis_token_expires_at = now + timedelta(hours=23)
         db.session.commit()
+        logger.info("KIS 토큰 재발급 완료 account=%s", self.account.id)
         return token
 
     def _headers(self, tr_id: str, extra: dict = None) -> dict:
@@ -144,6 +163,40 @@ class KISClient:
             h.update(extra)
         return h
 
+    def _headers_fresh(self, tr_id: str, extra: dict = None) -> dict:
+        """토큰 오류 감지 후 재발급된 토큰으로 헤더 생성."""
+        h = {
+            "content-type": "application/json; charset=utf-8",
+            "authorization": f"Bearer {self.get_access_token(force=True)}",
+            "appkey": self.app_key,
+            "appsecret": self.app_secret,
+            "tr_id": tr_id,
+            "custtype": "P",
+        }
+        if extra:
+            h.update(extra)
+        return h
+
+    def _is_token_error(self, resp: requests.Response) -> bool:
+        try:
+            return resp.json().get('msg_cd') in self._TOKEN_EXPIRED_CODES
+        except Exception:
+            return False
+
+    def _get(self, tr_id: str, url: str, params: dict, timeout: int = 10) -> requests.Response:
+        """토큰 만료 시 1회 재발급 후 재시도하는 GET 요청."""
+        resp = _get_with_retry(url, self._headers(tr_id), params, timeout=timeout,
+                               kis_client=self, tr_id=tr_id)
+        return resp
+
+    def _post(self, tr_id: str, url: str, body: dict, timeout: int = 10) -> requests.Response:
+        """토큰 만료 시 1회 재발급 후 재시도하는 POST 요청."""
+        resp = requests.post(url, headers=self._headers(tr_id), json=body, timeout=timeout)
+        if self._is_token_error(resp):
+            logger.warning("KIS 토큰 만료 — POST 재시도 tr_id=%s", tr_id)
+            resp = requests.post(url, headers=self._headers_fresh(tr_id), json=body, timeout=timeout)
+        return resp
+
     # ─── 시세 조회 ──────────────────────────────────────────────────────────────
 
     def get_price_kr(self, symbol: str) -> dict:
@@ -154,7 +207,7 @@ class KISClient:
         url = f"{self.base_url}/uapi/domestic-stock/v1/quotations/inquire-price"
         tr_id = "FHKST01010100"
         params = {"fid_cond_mrkt_div_code": "J", "fid_input_iscd": symbol}
-        resp = requests.get(url, headers=self._headers(tr_id), params=params, timeout=10)
+        resp = self._get(tr_id, url, params)
         _raise_for_status(resp)
         return resp.json()
 
@@ -166,7 +219,7 @@ class KISClient:
         url = f"{self.base_url}/uapi/overseas-price/v1/quotations/price"
         tr_id = "HHDFS00000300"
         params = {"AUTH": "", "EXCD": exchange, "SYMB": symbol}
-        resp = requests.get(url, headers=self._headers(tr_id), params=params, timeout=10)
+        resp = self._get(tr_id, url, params)
         _raise_for_status(resp)
         return resp.json()
 
@@ -188,7 +241,7 @@ class KISClient:
             "fid_input_date_1": start_dt.strftime("%Y%m%d"),
             "fid_input_date_2": end_dt.strftime("%Y%m%d"),
         }
-        resp = _get_with_retry(url, headers=self._headers(tr_id), params=params, timeout=10)
+        resp = self._get(tr_id, url, params)
         _raise_for_status(resp)
         return resp.json().get('output2', [])
 
@@ -205,7 +258,7 @@ class KISClient:
             "BYMD": "",
             "MODP": "1",
         }
-        resp = _get_with_retry(url, headers=self._headers(tr_id), params=params, timeout=10)
+        resp = self._get(tr_id, url, params)
         _raise_for_status(resp)
         return resp.json().get('output2', [])
 
@@ -231,7 +284,7 @@ class KISClient:
             "fid_div_cls_code": "0",
             "fid_vol_cnt": "100000",
         }
-        resp = requests.get(url, headers=self._headers(tr_id), params=params, timeout=15)
+        resp = self._get(tr_id, url, params, timeout=15)
         _raise_for_status(resp)
         return resp.json().get('output', [])
 
@@ -255,7 +308,7 @@ class KISClient:
             "CTX_AREA_FK100": "",
             "CTX_AREA_NK100": "",
         }
-        resp = requests.get(url, headers=self._headers(tr_id), params=params, timeout=10)
+        resp = self._get(tr_id, url, params)
         _raise_for_status(resp)
         return resp.json()
 
@@ -272,7 +325,7 @@ class KISClient:
             "CTX_AREA_FK200": "",
             "CTX_AREA_NK200": "",
         }
-        resp = requests.get(url, headers=self._headers("TTTS3012R"), params=params, timeout=10)
+        resp = self._get("TTTS3012R", url, params)
         _raise_for_status(resp)
         holdings = resp.json()
 
@@ -287,7 +340,7 @@ class KISClient:
             "INQR_DVSN_CD": "00",
         }
         try:
-            cash_resp = requests.get(cash_url, headers=self._headers("CTRP6504R"), params=cash_params, timeout=10)
+            cash_resp = self._get("CTRP6504R", cash_url, cash_params)
             _raise_for_status(cash_resp)
             cash_data = cash_resp.json()
             output3 = cash_data.get('output3', {})
@@ -343,7 +396,7 @@ class KISClient:
             "ORD_QTY": str(quantity),
             "ORD_UNPR": str(price),
         }
-        resp = requests.post(url, headers=self._headers(tr_id), json=body, timeout=10)
+        resp = self._post(tr_id, url, body)
         _raise_for_status(resp)
         return resp.json()
 
@@ -364,7 +417,7 @@ class KISClient:
             "OVRS_ORD_UNPR": str(price),
             "ORD_SVR_DVSN_CD": "0",
         }
-        resp = requests.post(url, headers=self._headers(tr_id), json=body, timeout=10)
+        resp = self._post(tr_id, url, body)
         _raise_for_status(resp)
         return resp.json()
 
@@ -380,7 +433,7 @@ class KISClient:
         url = f"{self.base_url}/uapi/domestic-stock/v1/quotations/inquire-price"
         tr_id = "FHKST01010100"
         params = {"fid_cond_mrkt_div_code": "J", "fid_input_iscd": symbol}
-        resp = requests.get(url, headers=self._headers(tr_id), params=params, timeout=10)
+        resp = self._get(tr_id, url, params)
         _raise_for_status(resp)
         return resp.json()
 
