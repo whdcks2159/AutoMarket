@@ -71,7 +71,10 @@
             <i class="fa-solid fa-rotate"></i>
           </button>
         </div>
-        <div style="font-weight:600;margin-top:4px;color:var(--text-muted)">불러오는 중...</div>
+        <div style="font-weight:600;margin-top:4px;color:var(--text-muted)" class="bal-total">불러오는 중...</div>
+        <div style="display:none;margin-top:4px;font-size:.7rem;color:var(--text-muted)" class="bal-detail">
+          <span class="bal-stocks"></span><span style="margin:0 4px">·</span><span class="bal-cash"></span>
+        </div>
       </div>
     </div>
 
@@ -140,7 +143,7 @@
 <!-- 최근 거래 내역 -->
 <div class="card" style="margin-top:24px">
   <div class="card-header">
-    <div class="card-title">최근 매매 내역</div>
+    <div class="card-title">오늘 매매 내역</div>
   </div>
   <div class="table-wrap">
     <table id="tradeTable" class="mobile-cards">
@@ -335,41 +338,56 @@ async function loadBalances() {
     try {
       const data = await apiFetch('/api/accounts/{{ account.id }}/balance');
       const el = document.getElementById('balance-{{ account.id }}');
+      const fmt = (v) => '₩' + v.toLocaleString('ko-KR', {maximumFractionDigits: 0});
       if (data.msg_cd === 'MOCK') {
-        el.querySelector('div:last-child').textContent = '모의투자 모드';
-        el.querySelector('div:last-child').style.color = 'var(--warning)';
+        el.querySelector('.bal-total').textContent = '모의투자 모드';
+        el.querySelector('.bal-total').style.color = 'var(--warning)';
       } else {
-        const output2 = Array.isArray(data.output2) ? data.output2[0] : (data.output2 || {});
+        const output2 = Array.isArray(data.output2) ? (data.output2[0] || {}) : (data.output2 || {});
         const isUS = '{{ account.market_type }}' === 'US';
         if (isUS) {
-          const stockEval = parseFloat(data.frcr_evlu_amt2 || 0);
+          const stocks = parseFloat(data.frcr_evlu_amt2 || 0);
           const cash = parseFloat(data.frcr_dncl_amt_2 || 0);
-          const total = stockEval + cash;
-          el.querySelector('div:last-child').textContent = '₩' + total.toLocaleString('ko-KR', {maximumFractionDigits: 0});
+          el.querySelector('.bal-total').textContent = fmt(stocks + cash);
+          el.querySelector('.bal-stocks').textContent = '주식 ' + fmt(stocks);
+          el.querySelector('.bal-cash').textContent = '현금 ' + fmt(cash);
         } else {
-          const krw = parseFloat(output2.tot_evlu_amt || 0);
-          el.querySelector('div:last-child').textContent = '₩' + krw.toLocaleString('ko-KR', {maximumFractionDigits: 0});
+          const total = parseFloat(output2.tot_evlu_amt || 0);
+          const stocks = parseFloat(output2.evlu_amt_smtl_amt || 0);
+          const cash = parseFloat(output2.dnca_tot_amt || 0);
+          el.querySelector('.bal-total').textContent = fmt(total);
+          el.querySelector('.bal-stocks').textContent = '주식 ' + fmt(stocks);
+          el.querySelector('.bal-cash').textContent = '현금 ' + fmt(cash);
         }
+        el.querySelector('.bal-total').style.color = 'var(--text)';
+        el.querySelector('.bal-detail').style.display = '';
       }
     } catch(e) {
       console.log('balance error {{ account.id }}:', e.message);
       const el = document.getElementById('balance-{{ account.id }}');
-      if (el) el.querySelector('div:last-child').textContent = '조회 실패';
+      if (el) el.querySelector('.bal-total').textContent = '조회 실패';
     }
   })();
   {% endfor %}
 }
 
-// ── 최근 거래 로드 ────────────────────────────────────────────────
+// ── 오늘 거래 로드 ────────────────────────────────────────────────
 async function loadRecentTrades() {
   const tbody = document.getElementById('tradeBody');
   if (!tbody) return;
   try {
     const summary = await apiFetch('/api/dashboard/summary');
+    const todayKST = new Date(new Date().toLocaleString('en-US', {timeZone: 'Asia/Seoul'}));
+    todayKST.setHours(0, 0, 0, 0);
     const rows = [];
     for (const item of summary) {
       for (const t of item.recent_trades) {
-        const dt = t.executed_at ? new Date(t.executed_at).toLocaleString('ko-KR') : '-';
+        if (t.executed_at) {
+          const ts = new Date(t.executed_at + (t.executed_at.endsWith('Z') ? '' : 'Z'));
+          const tKST = new Date(ts.toLocaleString('en-US', {timeZone: 'Asia/Seoul'}));
+          if (tKST < todayKST) continue;
+        }
+        const dt = t.executed_at ? new Date(t.executed_at + (t.executed_at.endsWith('Z') ? '' : 'Z')).toLocaleString('ko-KR', {timeZone:'Asia/Seoul',hour:'2-digit',minute:'2-digit',second:'2-digit'}) : '-';
         const side = t.side === 'BUY'
           ? '<span class="badge badge-success">매수</span>'
           : '<span class="badge badge-danger">매도</span>';
@@ -391,7 +409,7 @@ async function loadRecentTrades() {
         </tr>`);
       }
     }
-    tbody.innerHTML = rows.length ? rows.join('') : '<tr><td colspan="9" style="text-align:center;color:var(--text-muted);padding:32px">거래 내역이 없습니다</td></tr>';
+    tbody.innerHTML = rows.length ? rows.join('') : '<tr><td colspan="9" style="text-align:center;color:var(--text-muted);padding:32px">오늘 거래 내역이 없습니다</td></tr>';
   } catch(e) {
     tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;color:var(--danger)">${e.message}</td></tr>`;
   }
@@ -614,18 +632,46 @@ async function loadScanResults(page = 1) {
     }).join('');
 
     document.getElementById('scanPagerInfo').textContent = `총 ${data.total}건`;
-    const btns = document.getElementById('scanPagerBtns');
-    btns.innerHTML = '';
-    for (let p = 1; p <= data.pages; p++) {
-      const btn = document.createElement('button');
-      btn.className = `btn btn-sm ${p === page ? 'btn-primary' : 'btn-outline'}`;
-      btn.textContent = p;
-      btn.onclick = () => loadScanResults(p);
-      btns.appendChild(btn);
-    }
+    renderPagination('scanPagerBtns', data.page, data.pages, loadScanResults);
   } catch(e) {
     tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--danger)">${e.message}</td></tr>`;
   }
+}
+
+function renderPagination(containerId, current, total, onPage) {
+  const btns = document.getElementById(containerId);
+  btns.innerHTML = '';
+  if (total <= 1) return;
+
+  const mkBtn = (label, page, active) => {
+    const b = document.createElement('button');
+    b.className = `btn btn-sm ${active ? 'btn-primary' : 'btn-outline'}`;
+    b.textContent = label;
+    b.style.minWidth = '36px';
+    if (page) b.onclick = () => onPage(page);
+    else b.disabled = true;
+    return b;
+  };
+
+  btns.appendChild(mkBtn('‹', current > 1 ? current - 1 : null, false));
+
+  const pages = new Set([1, total]);
+  for (let p = Math.max(2, current - 1); p <= Math.min(total - 1, current + 1); p++) pages.add(p);
+  const sorted = [...pages].sort((a, b) => a - b);
+
+  let prev = 0;
+  for (const p of sorted) {
+    if (p - prev > 1) {
+      const dots = document.createElement('span');
+      dots.textContent = '…';
+      dots.style.cssText = 'padding:0 2px;color:var(--text-muted);align-self:center;font-size:.875rem';
+      btns.appendChild(dots);
+    }
+    btns.appendChild(mkBtn(p, p, p === current));
+    prev = p;
+  }
+
+  btns.appendChild(mkBtn('›', current < total ? current + 1 : null, false));
 }
 
 // 페이지 로드

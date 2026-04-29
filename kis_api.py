@@ -27,12 +27,20 @@ def _raise_for_status(resp):
 
 def _get_with_retry(url, headers, params, timeout=10, max_retries=3,
                     kis_client=None, tr_id: str = None) -> requests.Response:
-    """레이트 리밋(EGW00201) 및 토큰 만료 시 재시도."""
+    """레이트 리밋(EGW00201), 토큰 만료, 연결 타임아웃 시 재시도."""
     _TOKEN_EXPIRED_CODES = {'EGW00133', 'EGW00121', 'EGW00100'}
     delay = 1.0
     token_refreshed = False
     for attempt in range(max_retries):
-        resp = requests.get(url, headers=headers, params=params, timeout=timeout)
+        try:
+            resp = requests.get(url, headers=headers, params=params, timeout=timeout)
+        except (requests.exceptions.ConnectTimeout, requests.exceptions.ConnectionError) as e:
+            if attempt < max_retries - 1:
+                logger.warning("KIS 연결 실패 — %.1f초 후 재시도 (%d/%d): %s", delay, attempt + 1, max_retries, e)
+                time.sleep(delay)
+                delay *= 2
+                continue
+            raise
         try:
             body = resp.json()
             msg_cd = body.get('msg_cd', '')
@@ -241,7 +249,7 @@ class KISClient:
             "fid_input_date_1": start_dt.strftime("%Y%m%d"),
             "fid_input_date_2": end_dt.strftime("%Y%m%d"),
         }
-        resp = self._get(tr_id, url, params)
+        resp = self._get(tr_id, url, params, timeout=15)
         _raise_for_status(resp)
         return resp.json().get('output2', [])
 

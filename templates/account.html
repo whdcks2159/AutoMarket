@@ -42,6 +42,7 @@
   <div class="stat-card" id="balanceStat">
     <div class="stat-label">평가 잔고</div>
     <div class="stat-value">조회 중...</div>
+    <div id="balanceDetail" style="display:none;font-size:.75rem;color:var(--text-muted);margin-top:4px"></div>
   </div>
 </div>
 
@@ -88,7 +89,7 @@
 <!-- 매매 내역 -->
 <div class="card" style="margin-bottom:24px">
   <div class="card-header">
-    <div class="card-title">매매 내역</div>
+    <div class="card-title">오늘 매매 내역</div>
     <span id="tradePager" style="color:var(--text-muted);font-size:.875rem"></span>
   </div>
   <div class="table-wrap">
@@ -101,7 +102,7 @@
       </tbody>
     </table>
   </div>
-  <div style="display:flex;gap:8px;margin-top:16px;justify-content:center" id="paginationBtns"></div>
+  <div style="display:flex;align-items:center;justify-content:center;gap:4px;margin-top:16px;flex-wrap:wrap" id="paginationBtns"></div>
 </div>
 
 <!-- 전략 로그 -->
@@ -172,14 +173,19 @@ async function loadHoldings() {
     const raw2 = data.output2;
     const output2 = Array.isArray(raw2) ? (raw2[0] || {}) : (raw2 || {});
     const isUS = '{{ account.market_type }}' === 'US';
+    const fmt = (v) => '₩' + v.toLocaleString('ko-KR', {maximumFractionDigits: 0});
+    const detail = document.getElementById('balanceDetail');
     if (isUS) {
-      const stockEval = parseFloat(data.frcr_evlu_amt2 || 0);
+      const stocks = parseFloat(data.frcr_evlu_amt2 || 0);
       const cash = parseFloat(data.frcr_dncl_amt_2 || 0);
-      const totalKrw = stockEval + cash;
-      document.querySelector('#balanceStat .stat-value').textContent = '₩' + totalKrw.toLocaleString('ko-KR', {maximumFractionDigits: 0});
+      document.querySelector('#balanceStat .stat-value').textContent = fmt(stocks + cash);
+      if (detail) { detail.style.display = ''; detail.textContent = `주식 ${fmt(stocks)} · 현금 ${fmt(cash)}`; }
     } else {
-      const totalEval = parseFloat(output2.tot_evlu_amt || 0);
-      document.querySelector('#balanceStat .stat-value').textContent = '₩' + totalEval.toLocaleString('ko-KR', {maximumFractionDigits: 0});
+      const total = parseFloat(output2.tot_evlu_amt || 0);
+      const stocks = parseFloat(output2.evlu_amt_smtl_amt || 0);
+      const cash = parseFloat(output2.dnca_tot_amt || 0);
+      document.querySelector('#balanceStat .stat-value').textContent = fmt(total);
+      if (detail) { detail.style.display = ''; detail.textContent = `주식 ${fmt(stocks)} · 현금 ${fmt(cash)}`; }
     }
 
     if (!items.length) {
@@ -218,16 +224,17 @@ async function loadTrades(page = 1) {
   currentPage = page;
   const tbody = document.getElementById('tradeBody');
   try {
-    const data = await apiFetch(`/api/accounts/${accountId}/trades?page=${page}&per_page=5`);
-    document.getElementById('tradePager').textContent = `총 ${data.total}건`;
+    const data = await apiFetch(`/api/accounts/${accountId}/trades?page=${page}&per_page=10&today_only=1`);
+    document.getElementById('tradePager').textContent = `오늘 ${data.total}건`;
 
     if (!data.trades.length) {
-      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-muted);padding:24px">거래 내역이 없습니다</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-muted);padding:24px">오늘 거래 내역이 없습니다</td></tr>';
+      document.getElementById('paginationBtns').innerHTML = '';
       return;
     }
 
     tbody.innerHTML = data.trades.map(t => {
-      const dt = t.executed_at ? new Date(t.executed_at).toLocaleString('ko-KR') : '-';
+      const dt = t.executed_at ? new Date(t.executed_at).toLocaleString('ko-KR', {hour:'2-digit',minute:'2-digit',second:'2-digit'}) : '-';
       const side = t.side === 'BUY'
         ? '<span class="badge badge-success">매수</span>'
         : '<span class="badge badge-danger">매도</span>';
@@ -248,19 +255,47 @@ async function loadTrades(page = 1) {
       </tr>`;
     }).join('');
 
-    // 페이지네이션
-    const btns = document.getElementById('paginationBtns');
-    btns.innerHTML = '';
-    for (let p = 1; p <= data.pages; p++) {
-      const btn = document.createElement('button');
-      btn.className = `btn btn-sm ${p === page ? 'btn-primary' : 'btn-outline'}`;
-      btn.textContent = p;
-      btn.onclick = () => loadTrades(p);
-      btns.appendChild(btn);
-    }
+    renderPagination('paginationBtns', data.page, data.pages, loadTrades);
   } catch(e) {
     tbody.innerHTML = `<tr><td colspan="8" style="color:var(--danger);padding:16px">${e.message}</td></tr>`;
   }
+}
+
+function renderPagination(containerId, current, total, onPage) {
+  const btns = document.getElementById(containerId);
+  btns.innerHTML = '';
+  if (total <= 1) return;
+
+  const mkBtn = (label, page, active) => {
+    const b = document.createElement('button');
+    b.className = `btn btn-sm ${active ? 'btn-primary' : 'btn-outline'}`;
+    b.textContent = label;
+    b.style.minWidth = '36px';
+    if (page) b.onclick = () => onPage(page);
+    else b.disabled = true;
+    return b;
+  };
+
+  btns.appendChild(mkBtn('‹', current > 1 ? current - 1 : null, false));
+
+  const pages = [];
+  pages.push(1);
+  for (let p = Math.max(2, current - 1); p <= Math.min(total - 1, current + 1); p++) pages.push(p);
+  if (total > 1) pages.push(total);
+
+  let prev = 0;
+  for (const p of pages) {
+    if (p - prev > 1) {
+      const dots = document.createElement('span');
+      dots.textContent = '…';
+      dots.style.cssText = 'padding:0 4px;color:var(--text-muted);align-self:center';
+      btns.appendChild(dots);
+    }
+    btns.appendChild(mkBtn(p, p, p === current));
+    prev = p;
+  }
+
+  btns.appendChild(mkBtn('›', current < total ? current + 1 : null, false));
 }
 
 async function loadLogs() {

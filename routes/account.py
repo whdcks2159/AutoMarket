@@ -1,7 +1,7 @@
 import pytz
-from datetime import datetime
+from datetime import datetime, date, time
 from flask import Blueprint, request, jsonify, session, abort
-from models import db, Account, StrategyLog
+from models import db, Account, Trade, StrategyLog
 from kis_api import encrypt, decrypt, KISClient
 from routes.auth import login_required, current_user
 from strategies import STRATEGY_MAP
@@ -172,7 +172,16 @@ def get_trades(account_id):
     account = _owned_account(account_id)
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 20, type=int)
-    trades = account.trades.order_by(db.text('executed_at DESC')).paginate(page=page, per_page=per_page)
+    today_only = request.args.get('today_only', '0') == '1'
+
+    query = account.trades.order_by(db.text('executed_at DESC'))
+    if today_only:
+        today_kst = datetime.now(_KST).date()
+        midnight_kst = _KST.localize(datetime.combine(today_kst, time(0, 0, 0)))
+        midnight_utc = midnight_kst.astimezone(pytz.utc).replace(tzinfo=None)
+        query = query.filter(Trade.executed_at >= midnight_utc)
+
+    trades = query.paginate(page=page, per_page=per_page)
     return jsonify({
         'trades': [t.to_dict() for t in trades.items],
         'total': trades.total,
