@@ -227,6 +227,8 @@ def job_week52_high():
 
 
 def job_volatility_breakout():
+    if not is_trading_day_kr():
+        return
     logger.info("변동성 돌파 전략 실행 (5분 체크)")
     run_all_active_strategies('volatility_breakout')
 
